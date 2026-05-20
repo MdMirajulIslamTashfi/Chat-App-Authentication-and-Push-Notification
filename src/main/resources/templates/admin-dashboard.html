@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin — ChatApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{--ocean:#0077b6;--mid:#0096c7;--light:#90e0ef;--pale:#caf0f8;--bg:#f0f9ff;--surface:#ffffff;--text:#0d1b2a;--muted:#5d7a8a;--border:#bee3f8;--danger:#dc2626;--gold:#b45309}
+        body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+        nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,119,182,.07)}
+        .brand{display:flex;align-items:center;gap:9px;font-weight:600;color:var(--ocean);font-size:17px}
+        .brand-dot{width:8px;height:8px;background:var(--ocean);border-radius:50%}
+        .admin-badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;background:#fef3c7;color:var(--gold);border:1px solid #fde68a;border-radius:99px;padding:2px 9px}
+        .nav-right{display:flex;align-items:center;gap:14px}
+        .nav-user{font-size:13px;color:var(--muted)}
+        .nav-user strong{color:var(--text)}
+        .bell-wrap{position:relative}
+        .bell-btn{width:38px;height:38px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:17px;color:var(--muted);transition:all .15s}
+        .bell-btn:hover{border-color:var(--mid);color:var(--ocean)}
+        .bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:10px;font-weight:600;border-radius:99px;padding:1px 5px;min-width:18px;text-align:center;display:none}
+        .bell-badge.show{display:block}
+        .logout-btn{padding:7px 14px;border-radius:8px;background:none;border:1.5px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+        .logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+        .layout{display:flex;flex:1}
+        aside.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 0}
+        .aside-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);padding:6px 18px 8px}
+        .aside-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:var(--muted);text-decoration:none;border-left:3px solid transparent;transition:all .15s}
+        .aside-item:hover{background:var(--bg);color:var(--text);border-left-color:var(--light)}
+        .aside-item.active{background:#eff6ff;color:var(--ocean);border-left-color:var(--ocean);font-weight:500}
+        .content{flex:1;padding:28px;overflow-x:hidden}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+        .stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-top:3px solid var(--ocean)}
+        .stat .val{font-size:28px;font-weight:600;color:var(--ocean)}
+        .stat .val.clock{font-size:20px;font-family:'Inter',monospace;letter-spacing:.03em}
+        .stat .lbl{font-size:12px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+        .chat-cta{background:linear-gradient(135deg,var(--ocean),var(--mid));border-radius:12px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+        .chat-cta h3{font-size:15px;font-weight:600}
+        .chat-cta p{font-size:13px;opacity:.85;margin-top:3px}
+        .go-btn{background:#fff;color:var(--ocean);border:none;border-radius:8px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap;transition:opacity .15s}
+        .go-btn:hover{opacity:.9}
+        .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+        .section-title{font-size:15px;font-weight:600}
+        .search-box{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;outline:none;width:200px;transition:border-color .15s}
+        .search-box:focus{border-color:var(--mid)}
+        .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+        table{width:100%;border-collapse:collapse}
+        thead tr{background:#f8fbff}
+        thead th{padding:12px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)}
+        tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+        tbody tr:last-child{border-bottom:none}
+        tbody tr:hover td{background:var(--bg)}
+        tbody td{padding:12px 16px;font-size:13px}
+        .u-cell{display:flex;align-items:center;gap:10px}
+        .u-av{width:32px;height:32px;border-radius:8px;background:var(--pale);color:var(--ocean);display:grid;place-items:center;font-weight:600;font-size:12px;flex-shrink:0}
+        .u-name{font-weight:500}
+        .u-email{font-size:11px;color:var(--muted);margin-top:1px}
+        .role-pill{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:99px}
+        .role-USER{background:#eff6ff;color:var(--ocean);border:1px solid #bfdbfe}
+        .role-ADMIN{background:#fef3c7;color:var(--gold);border:1px solid #fde68a}
+        .msg-link{font-size:12px;color:var(--ocean);text-decoration:none;font-weight:500;padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;transition:all .15s}
+        .msg-link:hover{background:var(--bg);border-color:var(--mid)}
+        .notif-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:200}
+        .notif-overlay.open{display:block}
+        .notif-drawer{position:fixed;top:0;right:-380px;bottom:0;width:360px;background:var(--surface);border-left:1px solid var(--border);box-shadow:-4px 0 24px rgba(0,119,182,.1);z-index:201;transition:right .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+        .notif-drawer.open{right:0}
+        .notif-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+        .notif-head h2{font-size:16px;font-weight:600}
+        .notif-close{background:none;border:none;cursor:pointer;font-size:20px;color:var(--muted);width:32px;height:32px;border-radius:6px;display:grid;place-items:center}
+        .notif-close:hover{background:var(--bg)}
+        .notif-list{flex:1;overflow-y:auto;padding:10px}
+        .notif-item{padding:13px 14px;border-radius:10px;margin-bottom:6px;border:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;gap:12px;align-items:flex-start}
+        .notif-item:hover{background:var(--bg)}
+        .notif-item.unread{background:#eff6ff;border-color:#bfdbfe}
+        .n-av{width:36px;height:36px;border-radius:9px;flex-shrink:0;background:var(--pale);color:var(--ocean);display:grid;place-items:center;font-weight:600;font-size:13px}
+        .n-info .n-name{font-size:13px;font-weight:500}
+        .n-info .n-preview{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+        .notif-empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+        .quick-reply{padding:14px;border-top:1px solid var(--border);flex-shrink:0}
+        .quick-reply p{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+        .quick-row{display:flex;gap:6px}
+        .quick-row select,.quick-row input{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 10px;outline:none}
+        .quick-row select{width:120px;flex-shrink:0}
+        .quick-row input{flex:1}
+        .quick-row input:focus{border-color:var(--mid)}
+        .quick-row button{background:var(--ocean);border:none;border-radius:7px;color:#fff;font-size:12px;padding:8px 13px;cursor:pointer;font-family:'Inter',sans-serif}
+        .toast{position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--ocean);border-radius:10px;padding:13px 17px;box-shadow:0 4px 20px rgba(0,0,0,.1);font-size:13px;max-width:300px;transform:translateX(120%);transition:transform .3s ease}
+        .toast.show{transform:translateX(0)}
+        .toast .t-title{font-weight:500;margin-bottom:2px}
+        .toast .t-body{color:var(--muted)}
+    </style>
+</head>
+<body>
+<nav>
+    <div class="brand"><div class="brand-dot"></div>ChatApp<span class="admin-badge">Admin</span></div>
+    <div class="nav-right">
+        <span class="nav-user">Hello, <strong th:text="${admin.firstName}">Admin</strong></span>
+        <div class="bell-wrap">
+            <button class="bell-btn" onclick="toggleDrawer()">🔔
+                <span class="bell-badge" id="bellBadge"
+                      th:classappend="${totalUnread > 0} ? 'show'"
+                      th:text="${totalUnread > 0} ? ${totalUnread} : ''"></span>
+            </button>
+        </div>
+        <form th:action="@{/logout}" method="post" style="margin:0">
+            <button class="logout-btn" type="submit">Sign out</button>
+        </form>
+    </div>
+</nav>
+
+<div class="notif-overlay" id="notifOverlay" onclick="toggleDrawer()"></div>
+<aside class="notif-drawer" id="notifDrawer">
+    <div class="notif-head"><h2>Incoming Messages</h2><button class="notif-close" onclick="toggleDrawer()">✕</button></div>
+    <div class="notif-list" id="notifList"><div class="notif-empty">No new messages</div></div>
+    <div class="quick-reply">
+        <p>Quick Reply</p>
+        <div class="quick-row">
+            <select id="qRecipient">
+                <option value="">Select user…</option>
+                <th:block th:each="u : ${allUsers}">
+                    <option th:value="${u.email}" th:text="${u.fullName()}">User</option>
+                </th:block>
+            </select>
+            <input type="text" id="qMsg" placeholder="Message…" onkeydown="if(event.key==='Enter')quickReply()"/>
+            <button onclick="quickReply()">Send</button>
+        </div>
+    </div>
+</aside>
+
+<div class="layout">
+    <aside class="sidebar">
+        <div class="aside-label">Menu</div>
+        <a class="aside-item active" href="/admin/dashboard">📊 Dashboard</a>
+        <a class="aside-item" href="/admin/chat">💬 Messages</a>
+    </aside>
+
+    <div class="content">
+        <div class="stats">
+            <div class="stat">
+                <div class="val" th:text="${totalUsers}">0</div>
+                <div class="lbl">Total Users</div>
+            </div>
+            <div class="stat">
+                <div class="val" id="unreadVal" th:text="${totalUnread}">0</div>
+                <div class="lbl">Unread Messages</div>
+            </div>
+            <div class="stat">
+                <div class="val clock" id="clockVal">00:00:00</div>
+                <div class="lbl">Local Time</div>
+            </div>
+        </div>
+
+        <div class="chat-cta">
+            <div><h3>Chat with Users</h3><p>Open full conversations with all registered users.</p></div>
+            <a class="go-btn" href="/admin/chat">Open Chat →</a>
+        </div>
+
+        <div class="section-head">
+            <span class="section-title">Registered Users</span>
+            <input class="search-box" type="text" placeholder="Search…" id="searchInput" oninput="filterTable()"/>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>User</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
+                <tbody id="usersTbody">
+                <tr th:each="u : ${allUsers}">
+                    <td>
+                        <div class="u-cell">
+                            <div class="u-av" th:text="${u.initials()}">AB</div>
+                            <div>
+                                <div class="u-name" th:text="${u.fullName()}">Name</div>
+                                <div class="u-email" th:text="${u.email}">email</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="role-pill" th:classappend="'role-' + ${u.role}" th:text="${u.role}">USER</span></td>
+                    <td th:text="${u.createdAt != null} ? ${#temporals.format(u.createdAt,'dd MMM yyyy')} : '—'">—</td>
+                    <td><a class="msg-link" th:href="@{/admin/chat(open=${u.email})}">💬 Message</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-title" id="toastTitle"></div><div class="t-body" id="toastBody"></div></div>
+
+<script th:inline="javascript">
+    window.FB = {
+        apiKey:            /*[[${fbApiKey}]]*/ '',
+        authDomain:        /*[[${fbAuthDomain}]]*/ '',
+        projectId:         /*[[${fbProjectId}]]*/ '',
+        storageBucket:     /*[[${fbStorageBucket}]]*/ '',
+        messagingSenderId: /*[[${fbMessagingSenderId}]]*/ '',
+        appId:             /*[[${fbAppId}]]*/ ''
+    };
+    window.VAPID = /*[[${fbVapidKey}]]*/ '';
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+    // Running clock
+    function tickClock() {
+        var n = new Date();
+        document.getElementById('clockVal').textContent =
+            String(n.getHours()).padStart(2,'0')   + ':' +
+            String(n.getMinutes()).padStart(2,'0') + ':' +
+            String(n.getSeconds()).padStart(2,'0');
+    }
+    tickClock(); setInterval(tickClock, 1000);
+
+    function filterTable() {
+        var q = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('#usersTbody tr').forEach(function(row) {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+
+    function toggleDrawer() {
+        document.getElementById('notifDrawer').classList.toggle('open');
+        document.getElementById('notifOverlay').classList.toggle('open');
+        if (document.getElementById('notifDrawer').classList.contains('open')) fetchUnreadList();
+    }
+
+    async function fetchUnreadList() {
+        var res  = await fetch('/api/chat/unread-list');
+        var msgs = await res.json();
+        updateBadge(msgs.length);
+        var list = document.getElementById('notifList');
+        if (!msgs.length) { list.innerHTML = '<div class="notif-empty">All caught up 🎉</div>'; return; }
+        list.innerHTML = msgs.map(function(m) {
+            return '<div class="notif-item unread" onclick="goToChat(\'' + esc(m.fromEmail) + '\')">'
+                + '<div class="n-av">' + (m.fromName ? m.fromName[0].toUpperCase() : '?') + '</div>'
+                + '<div class="n-info"><div class="n-name">' + esc(m.fromName) + '</div>'
+                + '<div class="n-preview">' + esc(m.content) + '</div></div></div>';
+        }).join('');
+    }
+
+    function goToChat(email) { window.location.href = '/admin/chat?open=' + encodeURIComponent(email); }
+
+    // Updates both bell badge AND the stat card
+    function updateBadge(n) {
+        var b = document.getElementById('bellBadge');
+        b.textContent = n > 0 ? n : '';
+        b.classList.toggle('show', n > 0);
+        document.getElementById('unreadVal').textContent = n;
+    }
+
+    async function quickReply() {
+        var to      = document.getElementById('qRecipient').value;
+        var content = document.getElementById('qMsg').value.trim();
+        if (!to || !content || !window.stompClient || !window.stompClient.connected) return;
+        window.stompClient.send('/app/chat.send', {}, JSON.stringify({ toEmail: to, content: content }));
+        document.getElementById('qMsg').value = '';
+        showToast('Sent', 'Message delivered.');
+    }
+
+    function showToast(title, body, onClick) {
+        document.getElementById('toastTitle').textContent = title;
+        document.getElementById('toastBody').textContent  = body;
+        var t = document.getElementById('toast');
+        t.style.cursor = onClick ? 'pointer' : '';
+        t.onclick = onClick || null;
+        t.classList.add('show');
+        setTimeout(function(){ t.classList.remove('show'); }, 3500);
+    }
+
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function getCookie(name) {
+        var c = document.cookie.split(';').map(function(x){ return x.trim(); })
+            .find(function(x){ return x.startsWith(name + '='); });
+        return c ? c.split('=')[1] : '';
+    }
+
+    function connectWS() {
+        var sock = new SockJS('/ws');
+        window.stompClient = Stomp.over(sock);
+        window.stompClient.debug = null;
+        window.stompClient.connect({ jwt: getCookie('jwt_token') }, function() {
+            window.stompClient.subscribe('/user/queue/messages', function(frame) {
+                var msg = JSON.parse(frame.body);
+                if (!msg.mine) {
+                    var sender = msg.fromEmail;
+                    var senderName = msg.fromName || 'someone';
+                    showToast('Message from ' + senderName, msg.content, function() {
+                        window.location.href = '/admin/chat?open=' + encodeURIComponent(sender);
+                    });
+                    fetch('/api/chat/unread-total')
+                        .then(function(r){ return r.json(); })
+                        .then(function(d){ updateBadge(d.total || 0); });
+                    if (Notification.permission === 'granted') {
+                        try {
+                            var notif = new Notification('Message from ' + senderName, {
+                                body: msg.content,
+                                icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
+                                tag:  'admin-' + sender,
+                                renotify: true
+                            });
+                            notif.onclick = function() {
+                                window.focus();
+                                window.location.href = '/admin/chat?open=' + encodeURIComponent(sender);
+                                notif.close();
+                            };
+                        } catch(e) {}
+                    }
+                }
+            });
+        }, function() { setTimeout(connectWS, 3000); });
+    }
+
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    connectWS();
+
+    // Poll badge every 10 seconds via lightweight total endpoint
+    setInterval(function() {
+        fetch('/api/chat/unread-total')
+            .then(function(r){ return r.json(); })
+            .then(function(d){ updateBadge(d.total || 0); });
+    }, 10000);
+</script>
+</body>
+</html>

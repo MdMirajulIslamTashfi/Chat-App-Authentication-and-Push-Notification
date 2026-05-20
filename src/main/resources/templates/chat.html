@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Chat — ChatApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --ocean: #0077b6;
+            --mid: #0096c7;
+            --light: #90e0ef;
+            --pale: #caf0f8;
+            --bg: #f0f9ff;
+            --surface: #ffffff;
+            --text: #0d1b2a;
+            --muted: #5d7a8a;
+            --border: #bee3f8;
+            --mine-bg: #0077b6;
+            --mine-text: #fff;
+            --their-bg: #f1f5f9;
+            --their-text: #0d1b2a;
+            --danger: #dc2626;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column
+        }
+
+        /* TOPBAR */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: 0 1px 6px rgba(0, 119, 182, .07);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--ocean);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 7px;
+            transition: background .15s
+        }
+
+        .back-btn:hover {
+            background: var(--bg)
+        }
+
+        .brand {
+            font-weight: 600;
+            color: var(--ocean);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .role-chip {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            padding: 2px 9px;
+            border-radius: 99px
+        }
+
+        .role-chip.admin {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a
+        }
+
+        .role-chip.user {
+            background: #eff6ff;
+            color: var(--ocean);
+            border: 1px solid #bfdbfe
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .me-chip {
+            font-size: 12px;
+            color: var(--muted);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 4px 11px
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            color: var(--muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            padding: 5px 11px;
+            cursor: pointer;
+            transition: all .15s
+        }
+
+        .logout-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger)
+        }
+
+        /* LAYOUT */
+        .chat-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column
+        }
+
+        .sidebar-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--muted);
+            margin-bottom: 10px
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            padding: 8px 11px;
+            outline: none;
+            transition: border-color .15s
+        }
+
+        .search-input:focus {
+            border-color: var(--mid)
+        }
+
+        .contact-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: background .15s, transform .12s, opacity .15s;
+            margin-bottom: 2px
+        }
+
+        .contact-item:hover {
+            background: var(--bg);
+            transform:translateY(-1px);
+        }
+
+        .contact-item.active {
+            background: #eff6ff
+        }
+
+        .c-av {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            background: var(--pale);
+            color: var(--ocean);
+            display: grid;
+            place-items: center;
+            font-weight: 600;
+            font-size: 14px
+        }
+
+        .c-av.admin {
+            background: #fef3c7;
+            color: #92400e
+        }
+
+        .c-info {
+            overflow: hidden;
+            flex: 1;
+            min-width: 0
+        }
+
+        .c-name {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .c-role {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 1px
+        }
+
+        .c-preview {
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px
+        }
+
+        .c-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0
+        }
+
+        .c-time {
+            font-size: 10px;
+            color: var(--muted)
+        }
+
+        .c-badge {
+            background: var(--ocean);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 99px;
+            padding: 1px 6px;
+            min-width: 18px;
+            text-align: center;
+            display: none
+        }
+
+        .c-badge.show {
+            display: block
+        }
+
+        /* CHAT AREA */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .chat-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0
+        }
+
+        .ch-av {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: var(--pale);
+            color: var(--ocean);
+            display: grid;
+            place-items: center;
+            font-weight: 600;
+            font-size: 13px;
+            flex-shrink: 0
+        }
+
+        .ch-av.admin {
+            background: #fef3c7;
+            color: #92400e
+        }
+
+        .ch-name {
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .ch-sub {
+            font-size: 11px;
+            color: var(--mid);
+            margin-top: 1px
+        }
+
+        .online-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 4px
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--bg)
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 4px
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--light);
+            border-radius: 2px
+        }
+
+        .no-chat {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            color: var(--muted)
+        }
+
+        .no-chat .nc-icon {
+            font-size: 40px;
+            opacity: .4
+        }
+
+        .no-chat p {
+            font-size: 14px
+        }
+
+        /* MESSAGES */
+        .msg {
+            display: flex;
+            flex-direction: column;
+            max-width: 68%;
+            animation: msgIn .18s ease
+        }
+
+        .msg.mine {
+            align-self: flex-end;
+            align-items: flex-end
+        }
+
+        .msg.theirs {
+            align-self: flex-start;
+            align-items: flex-start
+        }
+
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px)
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .msg-name {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 500;
+            margin-bottom: 3px;
+            padding: 0 4px
+        }
+
+        .bubble {
+            padding: 9px 13px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word
+        }
+
+        .msg.mine .bubble {
+            background: var(--mine-bg);
+            color: var(--mine-text);
+            border-bottom-right-radius: 4px
+        }
+
+        .msg.theirs .bubble {
+            background: var(--their-bg);
+            color: var(--their-text);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border)
+        }
+
+        .msg-foot {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 3px;
+            padding: 0 4px;
+            display: flex;
+            align-items: center;
+            gap: 3px
+        }
+
+        .tick-single {
+            color: #94a3b8;
+            font-size: 11px
+        }
+
+        .tick-double {
+            color: var(--ocean);
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        /* INPUT */
+        .input-area {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 12px 16px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            flex-shrink: 0
+        }
+
+        .msg-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            padding: 10px 14px;
+            outline: none;
+            resize: none;
+            max-height: 120px;
+            min-height: 42px;
+            line-height: 1.4;
+            transition: border-color .15s
+        }
+
+        .msg-input:focus {
+            border-color: var(--mid);
+            background: #fff
+        }
+
+        .msg-input::placeholder {
+            color: var(--muted)
+        }
+
+        .send-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--ocean);
+            color: #fff;
+            border: none;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 17px;
+            flex-shrink: 0;
+            transition: background .15s
+        }
+
+        .send-btn:hover {
+            background: #005f92
+        }
+
+        /* STATUS BAR */
+        .status-bar {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-size: 12px;
+            color: var(--muted);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+            z-index: 50
+        }
+
+        .status-bar.show {
+            display: flex
+        }
+
+        .s-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ocean);
+            animation: blink 1.2s ease infinite
+        }
+
+        .s-dot:nth-child(2) {
+            animation-delay: .2s
+        }
+
+        .s-dot:nth-child(3) {
+            animation-delay: .4s
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1
+            }
+            50% {
+                opacity: .3
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <a class="back-btn"
+           th:href="${#authorization.expression('hasRole(''ADMIN'')')} ? @{/admin/dashboard} : @{/user/dashboard}">
+            ← Dashboard
+        </a>
+        <div class="brand">
+            ChatApp
+            <span class="role-chip admin" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">Admin</span>
+            <span class="role-chip user" th:unless="${#authorization.expression('hasRole(''ADMIN'')')}">User</span>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <span class="me-chip" th:text="${me.fullName()}">Me</span>
+        <form th:action="@{/logout}" method="post">
+            <button class="logout-btn" type="submit">Sign out</button>
+        </form>
+    </div>
+</div>
+
+<!-- CHAT LAYOUT -->
+<div class="chat-layout">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Conversations</div>
+            <input class="search-input" type="text" placeholder="Search contacts…"
+                   oninput="filterContacts(this.value)"/>
+        </div>
+        <div class="contact-list" id="contactList">
+            <div th:each="c : ${contacts}"
+                 class="contact-item"
+                 th:id="'c-' + ${c.email}"
+                 th:attr="data-email=${c.email},
+                    data-name=${c.fullName()},
+                    data-initials=${c.initials()},
+                    data-role=${c.role},
+                    data-search=${c.fullName().toLowerCase() + ' ' + c.email.toLowerCase()},
+                    data-lasttime='0'"
+                 onclick="openChat(this)">
+                <div class="c-av" th:classappend="${c.role.name() == 'ADMIN'} ? ' admin'">
+                    <span th:text="${c.initials()}">AB</span>
+                </div>
+                <div class="c-info">
+                    <div class="c-name" th:text="${c.fullName()}">Name</div>
+                    <div class="c-role" th:text="${c.role}">USER</div>
+                    <div class="c-preview" th:id="'prev-' + ${c.email}">Click to chat</div>
+                </div>
+                <div class="c-right">
+                    <span class="c-time" th:id="'time-'  + ${c.email}"></span>
+                    <span class="c-badge" th:id="'badge-' + ${c.email}"
+                          th:classappend="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ' show'"
+                          th:text="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ${unreadCounts[c.email]} : ''">
+          </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+        <div class="no-chat">
+            <div class="nc-icon">💬</div>
+            <p>Select a conversation to start chatting</p>
+        </div>
+    </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+    <div class="s-dot"></div>
+    <div class="s-dot"></div>
+    <div class="s-dot"></div>
+    <span id="statusText">Connecting…</span>
+</div>
+
+<!-- Server-side data injection -->
+<script th:inline="javascript">
+    window.ME_EMAIL = /*[[${me.email}]]*/ '';
+    window.ME_NAME = /*[[${me.fullName()}]]*/ '';
+    window.ME_INIT = /*[[${me.initials()}]]*/ '';
+    // ?open= param takes priority, then localStorage remembers last-open contact across navigations
+    window.OPEN_EMAIL = new URLSearchParams(location.search).get('open')
+        || localStorage.getItem('chat_open_' + (/*[[${me.email}]]*/ ''))
+        || '';
+    window.FB_CONFIG = {
+        apiKey:            /*[[${fbApiKey}]]*/ '',
+        authDomain:        /*[[${fbAuthDomain}]]*/ '',
+        projectId:         /*[[${fbProjectId}]]*/ '',
+        storageBucket:     /*[[${fbStorageBucket}]]*/ '',
+        messagingSenderId: /*[[${fbMessagingSenderId}]]*/ '',
+        appId:             /*[[${fbAppId}]]*/ ''
+    };
+    window.VAPID_KEY = /*[[${fbVapidKey}]]*/ '';
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+    'use strict';
+
+    var stompClient = null;
+    var currentEmail = null;
+    // Tracks message IDs already rendered — prevents duplicates
+    var renderedIds = new Set();
+
+
+    // ─── WebSocket connect ────────────────────────────────────────────────────────
+    function connect() {
+        showStatus('Connecting…');
+        var sock = new SockJS('/ws');
+        stompClient = Stomp.over(sock);
+        stompClient.debug = null;
+
+        stompClient.heartbeat.outgoing = 20000;
+        stompClient.heartbeat.incoming = 20000;
+
+        stompClient.connect({jwt: getCookie('jwt_token')}, onConnected, function () {
+                showStatus('Reconnecting…');
+                setTimeout(connect, 3000);
+                window.addEventListener('online', () => {
+                    if (!stompClient || !stompClient.connected) {
+                        connect();
+                    }
+                });
+            }
+        );
+    }
+
+    function onConnected() {
+        hideStatus();
+
+        // Incoming messages
+        stompClient.subscribe('/user/queue/messages', function (frame) {
+            var msg = JSON.parse(frame.body);
+            handleIncoming(msg);
+        });
+
+        // Read receipts from the other person
+        stompClient.subscribe('/user/queue/read', function (frame) {
+            var data = JSON.parse(frame.body);
+
+            if (data.messageId) {
+                var msg = document.getElementById('msg-' + data.messageId);
+
+                if (msg) {
+                    var tick = msg.querySelector('.tick-single');
+
+                    if (tick) {
+                        tick.className = 'tick-double';
+                        tick.textContent = '✓✓';
+                    }
+                }
+            }
+        });
+
+        loadUnreadCounts();
+        loadConversations();
+
+        // Auto-open if ?open= param present OR last-remembered contact
+        if (window.OPEN_EMAIL) {
+            var el = document.getElementById('c-' + window.OPEN_EMAIL);
+            if (el) openChat(el);
+        }
+    }
+
+    // ─── Open a chat thread ───────────────────────────────────────────────────────
+    function openChat(el) {
+        var email = el.dataset.email;
+        var name = el.dataset.name;
+        var initials = el.dataset.initials;
+        var role = el.dataset.role;
+        renderedIds = new Set();
+
+        // Remember which contact is open so it survives page navigations
+        localStorage.setItem('chat_open_' + window.ME_EMAIL, email);
+
+        // If this thread is already open, don't wipe and reload — just refocus
+        if (currentEmail === email && document.getElementById('msgList')) {
+            document.getElementById('msgInput') && document.getElementById('msgInput').focus();
+            return;
+        }
+
+        currentEmail = email;
+        renderedIds = new Set();
+
+        document.querySelectorAll('.contact-item').forEach(function (i) {
+            i.classList.remove('active');
+        });
+        el.classList.add('active');
+
+        var badge = document.getElementById('badge-' + email);
+        if (badge) {
+            badge.textContent = '';
+            badge.classList.remove('show');
+        }
+
+        var avCls = (role === 'ADMIN') ? 'ch-av admin' : 'ch-av';
+        var rolePill = (role === 'ADMIN')
+            ? '<span style="font-size:10px;font-weight:600;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 7px;margin-left:6px">Admin</span>'
+            : '';
+
+        document.getElementById('chatArea').innerHTML =
+            '<div class="chat-header">'
+            + '<div class="' + avCls + '">' + esc(initials) + '</div>'
+            + '<div><div class="ch-name">' + esc(name) + rolePill + '</div>'
+            + '<div class="ch-sub"><span class="online-dot"></span>Online</div></div>'
+            + '</div>'
+            + '<div class="messages" id="msgList"></div>'
+            + '<div class="input-area">'
+            + '<textarea class="msg-input" id="msgInput" placeholder="Type a message…" rows="1"'
+            + ' onkeydown="onKey(event)" oninput="autoH(this)"></textarea>'
+            + '<button class="send-btn" onclick="sendMsg()">&#10148;</button>'
+            + '</div>';
+
+        // Mark as read first, then load thread
+        fetch('/api/chat/thread?with=' + encodeURIComponent(email))
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (msgs) {
+
+                msgs.forEach(function (m) {
+                    appendMsg(m);
+                });
+
+                scrollBottom();
+
+                return fetch('/api/chat/read?sender=' + encodeURIComponent(email), {
+                    method: 'POST'
+                });
+            })
+            .then(function () {
+
+                // instantly clear badge visually
+                var badge = document.getElementById('badge-' + email);
+
+                if (badge) {
+                    badge.textContent = '';
+                    badge.classList.remove('show');
+                }
+
+                // refresh counts immediately
+                loadUnreadCounts();
+
+            })
+        .catch(function (e) {
+            console.error('Failed to load thread:', e);
+        });
+
+    document.getElementById('msgInput').focus();
+    }
+
+    // ─── Send a message ───────────────────────────────────────────────────────────
+    function sendMsg() {
+        if (!currentEmail || !stompClient || !stompClient.connected) return;
+        var input = document.getElementById('msgInput');
+        var text = (input.value || '').trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = 'auto';
+        input.focus();
+
+        stompClient.send('/app/chat.send', {}, JSON.stringify({
+            toEmail: currentEmail,
+            content: text
+        }));
+        // Server echoes back via /user/queue/messages with mine=true → handleIncoming renders it
+    }
+
+    // ─── Handle an incoming WebSocket message ────────────────────────────────────
+    function handleIncoming(msg) {
+        // Normalise sentAt — server sends ISO string "2026-05-20T12:08:00" via @JsonFormat
+        if (!msg.sentAt) msg.sentAt = new Date().toISOString();
+
+        /*
+         * mine=true  → I sent this message. partner = who I sent it to (toEmail).
+         * mine=false → I received this. partner = who sent it (fromEmail).
+         *
+         * The server now sends separate DTOs per recipient so this is always correct.
+         */
+        var partner = msg.mine ? msg.toEmail : msg.fromEmail;
+
+        if (partner === currentEmail) {
+            // This thread is currently open — render immediately
+            appendMsg(msg);
+            scrollBottom();
+
+            if (!msg.mine) {
+                // Mark server-side as read and send WS read receipt
+                fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), {method: 'POST'});
+                if (stompClient && stompClient.connected) {
+                    stompClient.send('/app/chat.read', {}, JSON.stringify({
+                        sender: msg.fromEmail,
+                        messageId: msg.id || ''
+                    }));
+                }
+            }
+        } else if (!msg.mine) {
+            // Different thread — bump sidebar badge
+            var badge = document.getElementById('badge-' + partner);
+            if (badge) {
+                var n = parseInt(badge.textContent || '0') + 1;
+                badge.textContent = n;
+                badge.classList.add('show');
+            }
+            pushNotif('New message from ' + (msg.fromName || 'someone'), msg.content, partner);
+        }
+
+        // Always update the sidebar preview + time for this contact, and re-sort
+        updateSidebar(partner, msg.content, msg.sentAt);
+        loadConversations();
+    }
+
+    // ─── Append one message bubble ───────────────────────────────────────────────
+    function appendMsg(msg) {
+        var list = document.getElementById('msgList');
+        if (!list) return;
+
+        // Deduplicate by ID (prevents double-render when history + WS echo arrive)
+        if (msg.id) {
+            if (renderedIds.has(msg.id)) return;
+            renderedIds.add(msg.id);
+        }
+
+        if (!msg.sentAt) msg.sentAt = new Date().toISOString();
+
+        /*
+         * Determine ownership:
+         *   1. Prefer msg.mine (set correctly by server per recipient)
+         *   2. Fallback: compare fromEmail to ME_EMAIL (catches edge cases)
+         */
+        var mine = (msg.mine === true) || (msg.fromEmail === window.ME_EMAIL);
+
+        var div = document.createElement('div');
+        div.className = 'msg ' + (mine ? 'mine' : 'theirs');
+        if (msg.id) div.id = 'msg-' + msg.id;
+
+        var tick = '';
+        if (mine) {
+            tick = msg.read
+                ? '<span class="tick-double" title="Read">✓✓</span>'
+                : '<span class="tick-single" title="Sent">✓</span>';
+        }
+
+        div.innerHTML =
+            (!mine ? '<div class="msg-name">' + esc(msg.fromName || '') + '</div>' : '') +
+            '<div class="bubble">' + esc(msg.content) + '</div>' +
+            '<div class="msg-foot">' + fmtTime(msg.sentAt) + (tick ? '&nbsp;' + tick : '') + '</div>';
+
+        requestAnimationFrame(() => {
+            list.appendChild(div);
+            scrollBottom();
+        });
+    }
+
+    // ─── Sidebar: update preview + time + re-sort ────────────────────────────────
+    function updateSidebar(email, preview, sentAt) {
+        var prev = document.getElementById('prev-' + email);
+        if (prev) prev.textContent = preview || '';
+
+        var timeEl = document.getElementById('time-' + email);
+        if (timeEl) timeEl.textContent = fmtTime(sentAt);
+
+        var el = document.getElementById('c-' + email);
+        if (el) {
+            var ts = sentAt ? Date.parse(sentAt) : Date.now();
+            el.dataset.lasttime = isNaN(ts) ? Date.now() : ts;
+            sortContacts();
+        }
+    }
+
+    function sortContacts() {
+        var list = document.getElementById('contactList');
+        var items = Array.from(list.querySelectorAll('.contact-item'));
+        items.sort(function (a, b) {
+            return parseInt(b.dataset.lasttime || '0') - parseInt(a.dataset.lasttime || '0');
+        });
+        items.forEach(function (el) {
+            list.appendChild(el);
+        });
+    }
+
+    // ─── Load unread badge counts for sidebar on page load ───────────────────────
+    function loadUnreadCounts() {
+        fetch('/api/chat/unread-all')
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (data) {
+                Object.keys(data).forEach(function (email) {
+                    var badge = document.getElementById('badge-' + email);
+                    if (badge && data[email] > 0) {
+                        badge.textContent = data[email];
+                        badge.classList.add('show');
+                    }
+                });
+            })
+            .catch(function (e) {
+                console.warn('unread-all:', e);
+            });
+    }
+
+    // load previous conversation
+    function loadConversations() {
+        fetch('/api/chat/conversations')
+            .then(r => r.json())
+            .then(data => {
+
+                data.forEach(c => {
+
+                    updateSidebar(
+                        c.email,
+                        c.lastMessage,
+                        c.lastTime
+                    );
+
+                    // unread badge
+                    var badge = document.getElementById('badge-' + c.email);
+
+                    if (badge && c.unread > 0) {
+                        badge.textContent = c.unread;
+                        badge.classList.add('show');
+                    }
+
+                });
+
+                sortContacts();
+
+                // auto-open latest chat
+                if (!window.OPEN_EMAIL && data.length > 0) {
+
+                    var first =
+                        document.getElementById('c-' + data[0].email);
+
+                    if (first) {
+                        openChat(first);
+                    }
+                }
+
+            })
+            .catch(err => {
+                console.error('Conversation load failed:', err);
+            });
+    }
+
+    // ─── Push notification ────────────────────────────────────────────────────────
+    // senderEmail: when clicked, navigates to chat?open=senderEmail
+    function pushNotif(title, body, senderEmail) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+            var notif = new Notification(title, {
+                body: body,
+                icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
+                tag: 'chat-' + (senderEmail || 'msg'),
+                renotify: true
+            });
+            if (senderEmail) {
+                notif.onclick = function () {
+                    window.focus();
+                    // If we're already on the chat page, open the thread directly
+                    var contactEl = document.getElementById('c-' + senderEmail);
+                    if (contactEl) {
+                        openChat(contactEl);
+                    } else {
+                        // On dashboard or another page — navigate to chat
+                        window.location.href = '/user/chat?open=' + encodeURIComponent(senderEmail);
+                    }
+                    notif.close();
+                };
+            }
+        } catch (e) { /* some browsers block in certain contexts */
+        }
+    }
+
+    // ─── Firebase Cloud Messaging ─────────────────────────────────────────────────
+    async function initFCM() {
+        if (!window.FB_CONFIG || !window.FB_CONFIG.apiKey) return;
+        try {
+            const {initializeApp} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+            const {
+                getMessaging,
+                getToken,
+                onMessage
+            } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+            const app = initializeApp(window.FB_CONFIG);
+            const messaging = getMessaging(app);
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') return;
+            const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const token = await getToken(messaging, {vapidKey: window.VAPID_KEY, serviceWorkerRegistration: reg});
+            if (token) {
+                await fetch('/fcm/token', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token})
+                });
+            }
+            onMessage(messaging, function (payload) {
+                var n = payload.notification || {};
+                pushNotif(n.title || 'New message', n.body || '');
+            });
+        } catch (e) {
+            console.warn('FCM init error:', e.message);
+        }
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────────
+    function onKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMsg();
+        }
+    }
+
+    function autoH(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function scrollBottom() {
+        var l = document.getElementById('msgList');
+        if (l) l.scrollTop = l.scrollHeight;
+    }
+
+    function esc(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /**
+     * Parse time from LocalDateTime ISO string "2026-05-20T12:08:00"
+     * or a JS ISO string "2026-05-20T12:08:00.000Z".
+     * Returns "HH:MM" or "" if unparseable.
+     */
+    function fmtTime(iso) {
+        if (!iso) return '';
+        // Handle both "2026-05-20T12:08:00" (no Z) and full ISO with Z
+        var d = new Date(iso);
+        // If parsing failed (older browsers reject no-Z ISO), try appending Z
+        if (isNaN(d.getTime())) {
+            d = new Date(iso + 'Z');
+        }
+        if (isNaN(d.getTime())) return '';
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function showStatus(t) {
+        document.getElementById('statusText').textContent = t;
+        document.getElementById('statusBar').classList.add('show');
+    }
+
+    function hideStatus() {
+        document.getElementById('statusBar').classList.remove('show');
+    }
+
+    function getCookie(name) {
+        var found = document.cookie.split(';').map(function (c) {
+            return c.trim();
+        })
+            .find(function (c) {
+                return c.startsWith(name + '=');
+            });
+        return found ? found.split('=')[1] : '';
+    }
+
+    function filterContacts(q) {
+        q = q.toLowerCase();
+        document.querySelectorAll('.contact-item').forEach(function (el) {
+            el.style.display = (el.dataset.search || '').includes(q) ? '' : 'none';
+        });
+    }
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────────
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+    connect();
+    initFCM();
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Register — ChatApp</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --ocean: #0077b6; --mid: #0096c7; --bg: #f0f9ff;
+            --surface: #ffffff; --text: #0d1b2a; --muted: #5d7a8a;
+            --border: #bee3f8; --danger: #dc2626;
+        }
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background-image: radial-gradient(ellipse at top, #bde0fe 0%, #f0f9ff 60%);
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 4px 24px rgba(0, 119, 182, 0.1);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .brand-icon {
+            width: 36px; height: 36px; background: var(--ocean);
+            border-radius: 9px; display: grid; place-items: center;
+            color: white; font-size: 18px;
+        }
+        .brand h1 { font-size: 20px; font-weight: 600; color: var(--ocean); letter-spacing: -0.3px; }
+        .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+        .alert {
+            background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+            color: var(--danger); font-size: 13px; padding: 10px 14px; margin-bottom: 18px;
+        }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .field { margin-bottom: 14px; }
+        .field label {
+            display: block; font-size: 12px; font-weight: 500; color: var(--muted);
+            text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+        }
+        .field input, .field select {
+            width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+            border-radius: 8px; color: var(--text); font-family: 'Inter', sans-serif;
+            font-size: 14px; padding: 11px 13px; outline: none; transition: border-color .15s;
+            appearance: none;
+        }
+        .field input:focus, .field select:focus {
+            border-color: var(--mid); background: white;
+            box-shadow: 0 0 0 3px rgba(0, 150, 199, 0.12);
+        }
+        .btn {
+            width: 100%; padding: 12px; margin-top: 6px;
+            background: var(--ocean); color: white; border: none; border-radius: 8px;
+            font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: background .15s;
+        }
+        .btn:hover { background: #005f92; }
+        .footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--muted); }
+        .footer a { color: var(--ocean); text-decoration: none; font-weight: 500; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="brand">
+        <div class="brand-icon">💬</div>
+        <h1>ChatApp</h1>
+    </div>
+    <p class="subtitle">Create your account.</p>
+
+    <div th:if="${error}" class="alert" th:text="${error}"></div>
+
+    <form th:action="@{/register}" th:object="${dto}" method="post">
+        <div class="row">
+            <div class="field">
+                <label>First Name</label>
+                <input type="text" th:field="*{firstName}" placeholder="John" required/>
+            </div>
+            <div class="field">
+                <label>Last Name</label>
+                <input type="text" th:field="*{lastName}" placeholder="Doe" required/>
+            </div>
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" th:field="*{email}" placeholder="you@example.com" required/>
+        </div>
+        <div class="field">
+            <label>Password</label>
+            <input type="password" th:field="*{password}" placeholder="••••••••" required/>
+        </div>
+        <div class="field">
+            <label>Confirm Password</label>
+            <input type="password" th:field="*{confirmPassword}" placeholder="••••••••" required/>
+        </div>
+        <div class="field">
+            <label>Role</label>
+            <select th:field="*{role}">
+                <option value="USER">User</option>
+                <option value="ADMIN">Admin</option>
+            </select>
+        </div>
+        <button class="btn" type="submit">Create Account →</button>
+    </form>
+
+    <div class="footer">Already have an account? <a href="/login">Sign in</a></div>
+</div>
+</body>
+</html>
