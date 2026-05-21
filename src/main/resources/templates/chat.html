@@ -663,7 +663,9 @@
     window.ME_INIT = /*[[${me.initials()}]]*/ '';
     // ?open= param takes priority, then localStorage remembers last-open contact across navigations
     // Checks standard URL variables first (?open=), falls back to local browser cache history mapping
-    window.OPEN_EMAIL = new URLSearchParams(location.search).get('open') || '';
+    window.OPEN_EMAIL = new URLSearchParams(location.search).get('open')
+        || localStorage.getItem('chat_open_' + (/*[[${me.email}]]*/ ''))
+        || '';
 
     // Maps Firebase SDK credential details dynamically from backend configurations
     window.FB_CONFIG = {
@@ -795,13 +797,7 @@
         document.getElementById('chatArea').innerHTML =
             '<div class="chat-header">'
             + '<div class="' + avCls + '">' + esc(initials) + '</div>'
-            + '<div style="flex:1">'
-            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
-            + '<div class="ch-name">' + esc(name) + rolePill + '</div>'
-            + '<button onclick="closeChat()" '
-            + 'style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;padding:0 6px">'
-            + '&times;</button>'
-            + '</div>'
+            + '<div><div class="ch-name">' + esc(name) + rolePill + '</div>'
             + '<div class="ch-sub"><span class="online-dot"></span>Online</div></div>'
             + '</div>'
             + '<div class="messages" id="msgList"></div>'
@@ -843,19 +839,6 @@
             });
 
         document.getElementById('msgInput').focus();
-    }
-
-    // close Chat (inputting esc)
-    function closeChat() {
-        currentEmail = null;
-        document.querySelectorAll('.contact-item').forEach(function (i) {
-            i.classList.remove('active');
-        });
-        document.getElementById('chatArea').innerHTML =
-            '<div class="no-chat">'
-            + '<div class="nc-icon">💬</div>'
-            + '<p>Select a conversation to start chatting</p>'
-            + '</div>';
     }
 
     // ----------------------------------------- Send a message ----------------------------------
@@ -901,16 +884,7 @@
             if (!msg.mine) {
                 // Automatically triggers DB status updates + sends real-time read receipt packets back across the socket
                 // Mark server-side as read and send WS read receipt
-                fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), {
-                    method: 'POST'
-                }).then(() => {
-                    var badge = document.getElementById('badge-' + msg.fromEmail);
-
-                    if (badge) {
-                        badge.textContent = '';
-                        badge.classList.remove('show');
-                    }
-                });
+                fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), {method: 'POST'});
                 if (stompClient && stompClient.connected) {
                     stompClient.send('/app/chat.read', {}, JSON.stringify({
                         sender: msg.fromEmail,
@@ -933,20 +907,7 @@
 
         // Always update the sidebar preview + time for this contact, and re-sort
         updateSidebar(partner, msg.content, msg.sentAt);
-        // If this chat is currently open,
-        // force-clear unread badge instantly
-        if (partner === currentEmail) {
-            var badge = document.getElementById('badge-' + partner);
-
-            if (badge) {
-                badge.textContent = '';
-                badge.classList.remove('show');
-            }
-        } else {
-            // only refresh sidebar unread counts
-            loadUnreadCounts();
-        }
-        sortContacts();
+        loadConversations();
     }
 
     // ─── Append one message bubble ───────────────────────────────────────────────
@@ -1057,6 +1018,14 @@
                     }
                 });
                 sortContacts();
+                // auto-open latest chat
+                // If no chat parameter specifies open targets, default load choice targets freshest active stream channel automatically
+                if (!window.OPEN_EMAIL && data.length > 0) {
+                    var first = document.getElementById('c-' + data[0].email);
+                    if (first) {
+                        openChat(first);
+                    }
+                }
             })
             .catch(err => {
                 console.error('Conversation load failed:', err);
@@ -1198,11 +1167,6 @@
             el.style.display = (el.dataset.search || '').includes(q) ? '' : 'none';
         });
     }
-    document.addEventListener('keydown', function(e){
-        if(e.key === 'Escape'){
-            closeChat();
-        }
-    });
 
     // ─── Boot ─────────────────────────────────────────────────────────────────────
     if ('Notification' in window && Notification.permission === 'default') {

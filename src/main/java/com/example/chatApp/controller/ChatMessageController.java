@@ -3,7 +3,6 @@ package com.example.chatApp.controller;
 import com.example.chatApp.dtos.requests.IncomingMessage;
 import com.example.chatApp.dtos.requests.OutgoingMessage;
 import com.example.chatApp.entity.User;
-import com.example.chatApp.enums.Roles;
 import com.example.chatApp.repositories.UserRepository;
 import com.example.chatApp.service.ChatMessageService;
 import com.example.chatApp.service.FirebaseNotificationService;
@@ -43,9 +42,6 @@ public class ChatMessageController {
         model.addAttribute("me", me);
         model.addAttribute("contacts", contacts);
         model.addAttribute("unreadCounts", chatService.allUnreadCounts(myEmail));
-        User admin = userRepository.findFirstByRole(Roles.ADMIN).orElseThrow();
-        model.addAttribute("adminEmail", admin.getEmail());
-
         return "chat";
     }
 
@@ -58,23 +54,7 @@ public class ChatMessageController {
         model.addAttribute("me", me);
         model.addAttribute("contacts", contacts);
         model.addAttribute("unreadCounts", chatService.allUnreadCounts(myEmail));
-        User admin = userRepository.findFirstByRole(Roles.ADMIN).orElseThrow();
-        model.addAttribute("adminEmail", admin.getEmail());
         return "chat";
-    }
-
-    // Quick Reply Admin check
-    @GetMapping("/api/admins")
-    @ResponseBody
-    public ResponseEntity<?> admins() {
-        List<User> admins = userRepository.findByRole(Roles.ADMIN);
-
-        return ResponseEntity.ok(
-                admins.stream().map(a -> Map.of(
-                        "email", a.getEmail(),
-                        "name", a.fullName()
-                )).toList()
-        );
     }
 
     // ── WebSocket: handle incoming direct message ──────────────────────────
@@ -118,10 +98,10 @@ public class ChatMessageController {
 
     // ── REST: load thread history ──────────────────────────────────────────
     @GetMapping("/api/chat/thread")
-    @ResponseBody
-    // Tells Spring to treat the returned data object directly as raw JSON body data rather than trying to look up a webpage template
+    @ResponseBody // Tells Spring to treat the returned data object directly as raw JSON body data rather than trying to look up a webpage template
     public ResponseEntity<?> getThread(@RequestParam String with) {
         String myEmail = getEmail();
+        chatService.markRead(myEmail, with);
         return ResponseEntity.ok(chatService.getThread(myEmail, with)); // Fetches historical logs for this chat window
     }
 
@@ -220,6 +200,5 @@ public class ChatMessageController {
     }
 
     // Java Record type: A lightweight data-carrier capsule structure used to rapidly map incoming JSON fields for read-receipt payloads
-    public record ReadReceipt(String messageId, String sender) {
-    }
+    public record ReadReceipt(String messageId, String sender) {}
 }

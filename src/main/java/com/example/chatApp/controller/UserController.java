@@ -44,11 +44,6 @@ public class UserController {
     @PostMapping("/register")
     public String handleRegister(@ModelAttribute RegisterDto dto, Model model) {
         try {
-            if (!dto.getPassword().equals(dto.getConfirmPassword())) {
-                model.addAttribute("error", "Passwords don't match");
-                model.addAttribute("dto", dto);
-                return "register";
-            }
             userService.register(dto);
             return "redirect:/login?registered=true";
         } catch (Exception e) {
@@ -109,23 +104,44 @@ public class UserController {
     @GetMapping("/user/dashboard")
     public String userDashboard(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
         User user = userService.findByEmail(auth.getName());
+
         model.addAttribute("user", user);
-        model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
-        model.addAttribute("allUsers", userService.getAllExcept(user.getEmail()));
-        model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
+
+        model.addAttribute(
+                "totalUnread",
+                chatMessageService.totalUnread(user.getEmail())
+        );
+
         return "user-dashboard";
     }
 
     // ------------------------- ADMIN DASHBOARD ----------------------------------
     @GetMapping("/admin/dashboard")
     public String adminDashboard(Model model) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
         User admin = userService.findByEmail(auth.getName());
+
         model.addAttribute("admin", admin);
-        model.addAttribute("allUsers", userService.getAllExcept(admin.getEmail()));
-        model.addAttribute("totalUsers", userService.getAllUsers().size());
-        model.addAttribute("totalUnread", chatMessageService.totalUnread(admin.getEmail()));
+
+        model.addAttribute(
+                "allUsers",
+                userService.getAllExcept(admin.getEmail())
+        );
+
+        model.addAttribute(
+                "totalUsers",
+                userService.getAllUsers().size()
+        );
+
+        model.addAttribute(
+                "totalUnread",
+                chatMessageService.totalUnread(admin.getEmail())
+        );
+
         return "admin-dashboard";
     }
 }
