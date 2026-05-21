@@ -10,7 +10,7 @@
         :root {
             --ocean: #0077b6; --mid: #0096c7; --bg: #f0f9ff;
             --surface: #ffffff; --text: #0d1b2a; --muted: #5d7a8a;
-            --border: #bee3f8; --danger: #dc2626;
+            --border: #bee3f8; --danger: #dc2626; --success: #059669;
         }
         body {
             min-height: 100vh;
@@ -42,6 +42,9 @@
             background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
             color: var(--danger); font-size: 13px; padding: 10px 14px; margin-bottom: 18px;
         }
+        .alert-error {
+            background: rgba(184, 50, 50, .07); border-color: var(--danger); color: var(--danger);
+        }
         .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .field { margin-bottom: 14px; }
         .field label {
@@ -57,6 +60,16 @@
         .field input:focus, .field select:focus {
             border-color: var(--mid); background: white;
             box-shadow: 0 0 0 3px rgba(0, 150, 199, 0.12);
+        }
+        .password-match {
+            font-size: 12px;margin-top: 4px;transition: all .2s;
+        }
+        .match-success {
+            color: var(--success);
+        }
+
+        .match-error {
+            color: var(--danger);
         }
         .btn {
             width: 100%; padding: 12px; margin-top: 6px;
@@ -84,36 +97,82 @@
         <div class="row">
             <div class="field">
                 <label>First Name</label>
-                <input type="text" th:field="*{firstName}" placeholder="John" required/>
+                <label>
+                    <input type="text" th:field="*{firstName}" placeholder="John" required/>
+                </label>
             </div>
             <div class="field">
                 <label>Last Name</label>
-                <input type="text" th:field="*{lastName}" placeholder="Doe" required/>
+                <label>
+                    <input type="text" th:field="*{lastName}" placeholder="Doe" required/>
+                </label>
             </div>
         </div>
         <div class="field">
             <label>Email</label>
-            <input type="email" th:field="*{email}" placeholder="you@example.com" required/>
+            <label>
+                <input type="email" th:field="*{email}" placeholder="you@example.com" required/>
+            </label>
         </div>
         <div class="field">
             <label>Password</label>
-            <input type="password" th:field="*{password}" placeholder="••••••••" required/>
+            <label>
+                <input type="password" th:field="*{password}" placeholder="••••••••" required/>
+            </label>
         </div>
         <div class="field">
             <label>Confirm Password</label>
-            <input type="password" th:field="*{confirmPassword}" placeholder="••••••••" required/>
+            <label>
+                <input type="password" th:field="*{confirmPassword}" placeholder="••••••••" required/>
+            </label>
+            <div id="passwordMessage" class="password-match"></div>
         </div>
         <div class="field">
             <label>Role</label>
-            <select th:field="*{role}">
-                <option value="USER">User</option>
-                <option value="ADMIN">Admin</option>
-            </select>
+            <label>
+                <select th:field="*{role}">
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </label>
         </div>
         <button class="btn" type="submit">Create Account →</button>
     </form>
 
     <div class="footer">Already have an account? <a href="/login">Sign in</a></div>
 </div>
+<script>
+    const password = document.getElementById("password");
+    const confirmPassword = document.getElementById("confirmPassword");
+    const passwordMessage = document.getElementById("passwordMessage");
+
+    function validatePassword() {
+        if (confirmPassword.value === "") {
+            passwordMessage.textContent = "";
+            passwordMessage.className = "password-match";
+            return;
+        }
+
+        if (password.value === confirmPassword.value) {
+            passwordMessage.textContent = "Passwords match";
+            passwordMessage.className = "password-match match-success";
+        } else {
+            passwordMessage.textContent = "Passwords do not match";
+            passwordMessage.className = "password-match match-error";
+        }
+    }
+
+    password.addEventListener("keyup", validatePassword);
+    confirmPassword.addEventListener("keyup", validatePassword);
+
+    function checkPasswords() {
+        if (password.value !== confirmPassword.value) {
+            passwordMessage.textContent = "Passwords do not match";
+            passwordMessage.className = "password-match match-error";
+            return false;
+        }
+        return true;
+    }
+</script>
 </body>
 </html>

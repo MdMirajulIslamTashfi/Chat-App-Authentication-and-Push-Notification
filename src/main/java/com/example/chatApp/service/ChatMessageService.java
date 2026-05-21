@@ -85,6 +85,33 @@ public class ChatMessageService {
         repo.markThreadRead(reader, sender, LocalDateTime.now());
     }
 
+    public List<ConversationDto> getConversations(String myEmail) {
+        List<ChatMessage> messages = repo.findByFromEmailOrToEmailOrderBySentAtDesc(myEmail, myEmail);
+        Map<String, ConversationDto> map = new LinkedHashMap<>();
+        for (ChatMessage msg : messages) {
+            String partner = msg.getFromEmail().equals(myEmail) ? msg.getToEmail() : msg.getFromEmail();
+            // already added latest message for this partner
+            if (map.containsKey(partner)) {
+                continue;
+            }
+            ConversationDto dto = new ConversationDto();
+            dto.setEmail(partner);
+            dto.setLastMessage(msg.getContent());
+            dto.setLastTime(msg.getSentAt());
+
+            long unread = repo.countByToEmailAndFromEmailAndReadFalse(myEmail, partner);
+            dto.setUnread(unread);
+            map.put(partner, dto);
+        }
+        return new ArrayList<>(map.values());
+    }
+
+    public List<OutgoingMessage> allUnreadFromSender(String myEmail, String sender) {
+        return repo.findByToEmailAndFromEmailAndReadFalse(myEmail, sender).stream()
+                .map(m -> toDto(m, userService.findByEmail(m.getFromEmail()).fullName(), myEmail))
+                .toList();
+    }
+
     /**
      * Converts a ChatMessage entity to an OutgoingMessage DTO.
      * viewer: the email of the person who will receive this DTO.
@@ -103,59 +130,5 @@ public class ChatMessageService {
                 .read(m.isRead())
                 .mine(mine)
                 .build();
-    }
-
-    public List<ConversationDto> getConversations(String myEmail) {
-
-        List<ChatMessage> messages =
-                repo.findByFromEmailOrToEmailOrderBySentAtDesc(
-                        myEmail,
-                        myEmail
-                );
-
-        Map<String, ConversationDto> map = new LinkedHashMap<>();
-
-        for (ChatMessage msg : messages) {
-
-            String partner = msg.getFromEmail().equals(myEmail)
-                    ? msg.getToEmail()
-                    : msg.getFromEmail();
-
-            // already added latest message for this partner
-            if (map.containsKey(partner)) {
-                continue;
-            }
-
-            ConversationDto dto = new ConversationDto();
-
-            dto.setEmail(partner);
-            dto.setLastMessage(msg.getContent());
-            dto.setLastTime(msg.getSentAt());
-
-            long unread = repo.countByToEmailAndFromEmailAndReadFalse(
-                    myEmail,
-                    partner
-            );
-
-            dto.setUnread(unread);
-
-            map.put(partner, dto);
-        }
-
-        return new ArrayList<>(map.values());
-    }
-
-    public List<OutgoingMessage> allUnreadFromSender(String myEmail, String sender) {
-
-        return repo.findByToEmailAndFromEmailAndReadFalse(
-                        myEmail,
-                        sender
-                ).stream()
-                .map(m -> toDto(
-                        m,
-                        userService.findByEmail(m.getFromEmail()).fullName(),
-                        myEmail
-                ))
-                .toList();
     }
 }

@@ -127,7 +127,7 @@
 
         .logout-btn {
             background: none;
-            border: 1.5px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 7px;
             color: var(--muted);
             font-family: 'Inter', sans-serif;
@@ -176,7 +176,7 @@
         .search-input {
             width: 100%;
             background: var(--bg);
-            border: 1.5px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 8px;
             color: var(--text);
             font-family: 'Inter', sans-serif;
@@ -209,7 +209,7 @@
 
         .contact-item:hover {
             background: var(--bg);
-            transform:translateY(-1px);
+            transform: translateY(-1px);
         }
 
         .contact-item.active {
@@ -481,7 +481,7 @@
         .msg-input {
             flex: 1;
             background: var(--bg);
-            border: 1.5px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 10px;
             color: var(--text);
             font-family: 'Inter', sans-serif;
@@ -600,10 +600,14 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-title">Conversations</div>
-            <input class="search-input" type="text" placeholder="Search contacts…"
-                   oninput="filterContacts(this.value)"/>
+            <label>
+                <!-- Input listener: Evaluates string queries instantly on typing to screen-filter contact divs -->
+                <input class="search-input" type="text" placeholder="Search contacts…"
+                       oninput="filterContacts(this.value)"/>
+            </label>
         </div>
         <div class="contact-list" id="contactList">
+            <!-- Thymeleaf loop: Generates an item block for each individual contact within the collection list -->
             <div th:each="c : ${contacts}"
                  class="contact-item"
                  th:id="'c-' + ${c.email}"
@@ -614,16 +618,19 @@
                     data-search=${c.fullName().toLowerCase() + ' ' + c.email.toLowerCase()},
                     data-lasttime='0'"
                  onclick="openChat(this)">
+                <!-- Avatar block: appends 'admin' class conditional variant for specialized styling -->
                 <div class="c-av" th:classappend="${c.role.name() == 'ADMIN'} ? ' admin'">
                     <span th:text="${c.initials()}">AB</span>
                 </div>
                 <div class="c-info">
                     <div class="c-name" th:text="${c.fullName()}">Name</div>
                     <div class="c-role" th:text="${c.role}">USER</div>
+                    <!-- Message Preview snippet window placeholder -->
                     <div class="c-preview" th:id="'prev-' + ${c.email}">Click to chat</div>
                 </div>
                 <div class="c-right">
                     <span class="c-time" th:id="'time-'  + ${c.email}"></span>
+                    <!-- Unread Count Badge: shows 'show' CSS class context only when data values exceed zero -->
                     <span class="c-badge" th:id="'badge-' + ${c.email}"
                           th:classappend="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ' show'"
                           th:text="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ${unreadCounts[c.email]} : ''">
@@ -632,15 +639,16 @@
             </div>
         </div>
     </div>
-
+    <!-- Active messaging focus interface pane -->
     <div class="chat-area" id="chatArea">
+        <!-- Default baseline fallback UI placeholder before selection target is loaded -->
         <div class="no-chat">
             <div class="nc-icon">💬</div>
             <p>Select a conversation to start chatting</p>
         </div>
     </div>
 </div>
-
+<!-- Status bar indicator reflecting the global real-time network layer condition -->
 <div class="status-bar" id="statusBar">
     <div class="s-dot"></div>
     <div class="s-dot"></div>
@@ -648,15 +656,18 @@
     <span id="statusText">Connecting…</span>
 </div>
 
-<!-- Server-side data injection -->
+<!-- Server-side data injection: Safely handles variable binding into global JavaScript window scopes -->
 <script th:inline="javascript">
     window.ME_EMAIL = /*[[${me.email}]]*/ '';
     window.ME_NAME = /*[[${me.fullName()}]]*/ '';
     window.ME_INIT = /*[[${me.initials()}]]*/ '';
     // ?open= param takes priority, then localStorage remembers last-open contact across navigations
+    // Checks standard URL variables first (?open=), falls back to local browser cache history mapping
     window.OPEN_EMAIL = new URLSearchParams(location.search).get('open')
         || localStorage.getItem('chat_open_' + (/*[[${me.email}]]*/ ''))
         || '';
+
+    // Maps Firebase SDK credential details dynamically from backend configurations
     window.FB_CONFIG = {
         apiKey:            /*[[${fbApiKey}]]*/ '',
         authDomain:        /*[[${fbAuthDomain}]]*/ '',
@@ -668,8 +679,10 @@
     window.VAPID_KEY = /*[[${fbVapidKey}]]*/ '';
 </script>
 
+<!-- External library engine files handling socket upgrade channels and messaging layer layers -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
 <script>
     'use strict';
 
@@ -679,18 +692,22 @@
     var renderedIds = new Set();
 
 
-    // ─── WebSocket connect ────────────────────────────────────────────────────────
+    // ----------------------- WebSocket connect ------------------------------------------
     function connect() {
         showStatus('Connecting…');
-        var sock = new SockJS('/ws');
+        var sock = new SockJS('/ws'); // Points directly to the registered backend handshake endpoint
         stompClient = Stomp.over(sock);
-        stompClient.debug = null;
+        // Tracks unique message IDs already loaded onto screen views to prevent duplicates popping up
+        stompClient.debug = null; // Turns off verbose console streaming messages from the STOMP engine
 
+        // Configures continuous ping/pong heartbeats spaced out at 20-second blocks
         stompClient.heartbeat.outgoing = 20000;
         stompClient.heartbeat.incoming = 20000;
 
+        // Automatically injects the JWT from cookie store headers to authorize connection acceptance
         stompClient.connect({jwt: getCookie('jwt_token')}, onConnected, function () {
                 showStatus('Reconnecting…');
+                // Auto-retry scheduling routine: hits retry routine every 3 seconds if connectivity drops
                 setTimeout(connect, 3000);
                 window.addEventListener('online', () => {
                     if (!stompClient || !stompClient.connected) {
@@ -705,6 +722,7 @@
         hideStatus();
 
         // Incoming messages
+        // Standard message inbox subscription targeting the private custom channel destination routing parameter
         stompClient.subscribe('/user/queue/messages', function (frame) {
             var msg = JSON.parse(frame.body);
             handleIncoming(msg);
@@ -713,14 +731,12 @@
         // Read receipts from the other person
         stompClient.subscribe('/user/queue/read', function (frame) {
             var data = JSON.parse(frame.body);
-
             if (data.messageId) {
                 var msg = document.getElementById('msg-' + data.messageId);
-
                 if (msg) {
                     var tick = msg.querySelector('.tick-single');
-
                     if (tick) {
+                        // Optimistically swaps out single-check markers to double-check marks live
                         tick.className = 'tick-double';
                         tick.textContent = '✓✓';
                     }
@@ -738,31 +754,34 @@
         }
     }
 
-    // ─── Open a chat thread ───────────────────────────────────────────────────────
+    // --------------------------- Open a chat thread -----------------------------------
     function openChat(el) {
         var email = el.dataset.email;
         var name = el.dataset.name;
         var initials = el.dataset.initials;
         var role = el.dataset.role;
-        renderedIds = new Set();
+        renderedIds = new Set(); // Flushes cached identity snapshots for the new thread
 
         // Remember which contact is open so it survives page navigations
+        // Commits open chat context states to localStorage to persist across navigation actions
         localStorage.setItem('chat_open_' + window.ME_EMAIL, email);
 
         // If this thread is already open, don't wipe and reload — just refocus
+        // Guard logic: avoids unnecessary UI flashes if someone clicks on an already active panel
         if (currentEmail === email && document.getElementById('msgList')) {
             document.getElementById('msgInput') && document.getElementById('msgInput').focus();
             return;
         }
-
         currentEmail = email;
         renderedIds = new Set();
 
+        // Visually flags selecting dynamic highlights within list views
         document.querySelectorAll('.contact-item').forEach(function (i) {
             i.classList.remove('active');
         });
         el.classList.add('active');
 
+        // Clears unread badge element states optimistically on touch initialization
         var badge = document.getElementById('badge-' + email);
         if (badge) {
             badge.textContent = '';
@@ -774,6 +793,7 @@
             ? '<span style="font-size:10px;font-weight:600;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 7px;margin-left:6px">Admin</span>'
             : '';
 
+        // Overwrites the inactive container interface with dynamic interactive thread templates
         document.getElementById('chatArea').innerHTML =
             '<div class="chat-header">'
             + '<div class="' + avCls + '">' + esc(initials) + '</div>'
@@ -788,54 +808,52 @@
             + '</div>';
 
         // Mark as read first, then load thread
+        // Hits historical REST data endpoints to load historical message archives
         fetch('/api/chat/thread?with=' + encodeURIComponent(email))
             .then(function (r) {
                 return r.json();
             })
             .then(function (msgs) {
-
+                // Sequentially injects old messages onto screen views
                 msgs.forEach(function (m) {
                     appendMsg(m);
                 });
-
                 scrollBottom();
-
+                // Dispatches a POST notification request updating receipt targets across server databases
                 return fetch('/api/chat/read?sender=' + encodeURIComponent(email), {
                     method: 'POST'
                 });
             })
             .then(function () {
-
                 // instantly clear badge visually
                 var badge = document.getElementById('badge-' + email);
-
                 if (badge) {
                     badge.textContent = '';
                     badge.classList.remove('show');
                 }
-
-                // refresh counts immediately
+                // Recalculates metrics mapping layouts cleanly
                 loadUnreadCounts();
-
             })
-        .catch(function (e) {
-            console.error('Failed to load thread:', e);
-        });
+            .catch(function (e) {
+                console.error('Failed to load thread:', e);
+            });
 
-    document.getElementById('msgInput').focus();
+        document.getElementById('msgInput').focus();
     }
 
-    // ─── Send a message ───────────────────────────────────────────────────────────
+    // ----------------------------------------- Send a message ----------------------------------
     function sendMsg() {
         if (!currentEmail || !stompClient || !stompClient.connected) return;
         var input = document.getElementById('msgInput');
         var text = (input.value || '').trim();
-        if (!text) return;
+        if (!text) return; // Ignores blank string executions
 
+        // Ignores blank string executions
         input.value = '';
         input.style.height = 'auto';
         input.focus();
 
+        // Dispatches outbound payload packets over STOMP mapping to backend controller endpoints
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             toEmail: currentEmail,
             content: text
@@ -843,25 +861,28 @@
         // Server echoes back via /user/queue/messages with mine=true → handleIncoming renders it
     }
 
-    // ─── Handle an incoming WebSocket message ────────────────────────────────────
+    // ---------------------------------- Handle an incoming WebSocket message --------------------------------------
     function handleIncoming(msg) {
+        // Enforces structural timestamp baselines if data attributes miss targets
         // Normalise sentAt — server sends ISO string "2026-05-20T12:08:00" via @JsonFormat
         if (!msg.sentAt) msg.sentAt = new Date().toISOString();
 
         /*
          * mine=true  → I sent this message. partner = who I sent it to (toEmail).
          * mine=false → I received this. partner = who sent it (fromEmail).
-         *
          * The server now sends separate DTOs per recipient so this is always correct.
+         * Normalizes owner details conditionally to sort target destinations
          */
         var partner = msg.mine ? msg.toEmail : msg.fromEmail;
 
         if (partner === currentEmail) {
+            // Target conversation interface is actively open — render into viewing list immediately
             // This thread is currently open — render immediately
             appendMsg(msg);
             scrollBottom();
 
             if (!msg.mine) {
+                // Automatically triggers DB status updates + sends real-time read receipt packets back across the socket
                 // Mark server-side as read and send WS read receipt
                 fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), {method: 'POST'});
                 if (stompClient && stompClient.connected) {
@@ -872,6 +893,7 @@
                 }
             }
         } else if (!msg.mine) {
+            // Target conversation is closed background task — updates numerical alert badges on sidebar list
             // Different thread — bump sidebar badge
             var badge = document.getElementById('badge-' + partner);
             if (badge) {
@@ -879,6 +901,7 @@
                 badge.textContent = n;
                 badge.classList.add('show');
             }
+            // Pushes systemic browser level notification popups out-of-band
             pushNotif('New message from ' + (msg.fromName || 'someone'), msg.content, partner);
         }
 
@@ -892,6 +915,7 @@
         var list = document.getElementById('msgList');
         if (!list) return;
 
+        // Deduplication guard: avoids double rendering identical structures if socket echos collide with HTTP fetch lists
         // Deduplicate by ID (prevents double-render when history + WS echo arrive)
         if (msg.id) {
             if (renderedIds.has(msg.id)) return;
@@ -913,16 +937,18 @@
 
         var tick = '';
         if (mine) {
+            // Evaluates checkmark states based on boolean property flags
             tick = msg.read
                 ? '<span class="tick-double" title="Read">✓✓</span>'
                 : '<span class="tick-single" title="Sent">✓</span>';
         }
-
+        // Assembles item template markup cleanly inside escaping filters
         div.innerHTML =
             (!mine ? '<div class="msg-name">' + esc(msg.fromName || '') + '</div>' : '') +
             '<div class="bubble">' + esc(msg.content) + '</div>' +
             '<div class="msg-foot">' + fmtTime(msg.sentAt) + (tick ? '&nbsp;' + tick : '') + '</div>';
 
+        // Schedules insertion execution matching browser animation frame refreshes safely
         requestAnimationFrame(() => {
             list.appendChild(div);
             scrollBottom();
@@ -945,6 +971,7 @@
         }
     }
 
+    // Sorts the list entries based on timestamp keys so active channels float to top visibility rows
     function sortContacts() {
         var list = document.getElementById('contactList');
         var items = Array.from(list.querySelectorAll('.contact-item'));
@@ -952,7 +979,7 @@
             return parseInt(b.dataset.lasttime || '0') - parseInt(a.dataset.lasttime || '0');
         });
         items.forEach(function (el) {
-            list.appendChild(el);
+            list.appendChild(el); // Re-appending shifts structural locations implicitly without duplicate creation
         });
     }
 
@@ -976,43 +1003,29 @@
             });
     }
 
-    // load previous conversation
+    // Grabs active recent channels history blocks to build dashboard templates cleanly on load
     function loadConversations() {
         fetch('/api/chat/conversations')
             .then(r => r.json())
             .then(data => {
-
                 data.forEach(c => {
-
-                    updateSidebar(
-                        c.email,
-                        c.lastMessage,
-                        c.lastTime
-                    );
-
+                    updateSidebar(c.email, c.lastMessage, c.lastTime);
                     // unread badge
                     var badge = document.getElementById('badge-' + c.email);
-
                     if (badge && c.unread > 0) {
                         badge.textContent = c.unread;
                         badge.classList.add('show');
                     }
-
                 });
-
                 sortContacts();
-
                 // auto-open latest chat
+                // If no chat parameter specifies open targets, default load choice targets freshest active stream channel automatically
                 if (!window.OPEN_EMAIL && data.length > 0) {
-
-                    var first =
-                        document.getElementById('c-' + data[0].email);
-
+                    var first = document.getElementById('c-' + data[0].email);
                     if (first) {
                         openChat(first);
                     }
                 }
-
             })
             .catch(err => {
                 console.error('Conversation load failed:', err);
@@ -1027,8 +1040,8 @@
             var notif = new Notification(title, {
                 body: body,
                 icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
-                tag: 'chat-' + (senderEmail || 'msg'),
-                renotify: true
+                tag: 'chat-' + (senderEmail || 'msg'), // Tag values group matching categories together cleanly
+                renotify: true // Triggers hardware vibrations alerts even if message groups align identical indicators
             });
             if (senderEmail) {
                 notif.onclick = function () {
@@ -1036,9 +1049,10 @@
                     // If we're already on the chat page, open the thread directly
                     var contactEl = document.getElementById('c-' + senderEmail);
                     if (contactEl) {
-                        openChat(contactEl);
+                        openChat(contactEl); // Simply shifts active view states if target viewport matches
                     } else {
                         // On dashboard or another page — navigate to chat
+                        // Forces location redirects mapping views across separate routes
                         window.location.href = '/user/chat?open=' + encodeURIComponent(senderEmail);
                     }
                     notif.close();
@@ -1048,9 +1062,10 @@
         }
     }
 
-    // ─── Firebase Cloud Messaging ─────────────────────────────────────────────────
+    // ------------------- Firebase Cloud Messaging --------------------------------
+    // Asynchronously loads modular ESM JavaScript versions directly into baseline legacy implementations safely
     async function initFCM() {
-        if (!window.FB_CONFIG || !window.FB_CONFIG.apiKey) return;
+        if (!window.FB_CONFIG || !window.FB_CONFIG.apiKey) return; // Safe exit paths if Firebase integration parameters are omitted
         try {
             const {initializeApp} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
             const {
@@ -1062,6 +1077,8 @@
             const messaging = getMessaging(app);
             const perm = await Notification.requestPermission();
             if (perm !== 'granted') return;
+
+            // Automatically registers background Service worker dependencies matching asset paths
             const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             const token = await getToken(messaging, {vapidKey: window.VAPID_KEY, serviceWorkerRegistration: reg});
             if (token) {
@@ -1071,6 +1088,7 @@
                     body: JSON.stringify({token})
                 });
             }
+            // Foreground payload interception listener block: handles updates gracefully when app windows stay visible
             onMessage(messaging, function (payload) {
                 var n = payload.notification || {};
                 pushNotif(n.title || 'New message', n.body || '');
@@ -1080,7 +1098,8 @@
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────────
+    // ------------------------- Helpers -------------------------------------------------
+    // Captures Enter button triggers without Shift variations to submit textual content strings safely
     function onKey(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -1088,11 +1107,13 @@
         }
     }
 
+    // Dynamically grows target height scopes matching message content size parameters (caps vertical bounds up to 120px max)
     function autoH(el) {
         el.style.height = 'auto';
         el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
 
+    // Auto-scrolls message tracking view scopes downward directly targeting fresh interaction streams
     function scrollBottom() {
         var l = document.getElementById('msgList');
         if (l) l.scrollTop = l.scrollHeight;
@@ -1128,6 +1149,7 @@
         document.getElementById('statusBar').classList.remove('show');
     }
 
+    // Grabs targeted cookie value elements directly by field key lookups
     function getCookie(name) {
         var found = document.cookie.split(';').map(function (c) {
             return c.trim();
@@ -1138,6 +1160,7 @@
         return found ? found.split('=')[1] : '';
     }
 
+    // Performs ultra-fast, local dataset property filters to instantly map or mask visible list entries on input
     function filterContacts(q) {
         q = q.toLowerCase();
         document.querySelectorAll('.contact-item').forEach(function (el) {

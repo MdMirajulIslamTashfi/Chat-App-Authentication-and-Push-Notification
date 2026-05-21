@@ -14,6 +14,8 @@ import java.util.List;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
 
+    // Custom JPQL Query: Fetches a complete direct dialogue thread between two users.
+    // The "OR" logic ensures it pulls messages User A sent to User B AND messages User B sent to User A.
     // All messages in a direct thread between two people (both directions)
     @Query("""
             SELECT m FROM ChatMessage m
@@ -32,6 +34,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
             """)
     long countUnread(@Param("email") String email, @Param("other") String other);
 
+    // Bulk-updates unread message properties.
     // Mark thread messages as read
     @Modifying
     @Transactional
@@ -44,6 +47,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
                         @Param("sender") String sender,
                         @Param("now") LocalDateTime now);
 
+    // Pulls all unread messages addressed to a user across all contacts, sorted newest first
     // All unread messages for a user across all threads
     @Query("""
             SELECT m FROM ChatMessage m
@@ -52,13 +56,16 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
             """)
     List<ChatMessage> findAllUnread(@Param("email") String email);
 
+    // Pulls the absolute total count of all unread messages a user has (powers the top navbar bell icon badge)
     // Total unread count for a user
     @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.toEmail = :email AND m.read = false AND m.type = 'DIRECT'")
     long countAllUnread(@Param("email") String email);
 
 
 
-    // ------------------------ changing -------------------------------------
+    // ----------------------- Section: Changing / Additional Queries -----------------------------
+
+    // Pulls every message the user is involved in (either sent or received) ordered newest first
     @Query("""
             SELECT m
             FROM ChatMessage m
@@ -68,17 +75,22 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, String
             """)
     List<ChatMessage> findAllRelatedMessages(String me);
 
+    // Derived Query Method: Spring parses this name to automatically write the SQL.
+    // Equivalent to: SELECT * FROM chat_message WHERE from_email = ? OR to_email = ? ORDER BY sent_at DESC
     // Needed for conversation sidebar
     List<ChatMessage> findByFromEmailOrToEmailOrderBySentAtDesc(
             String fromEmail,
             String toEmail
     );
 
+    // Derived Query Method: Fetches the concrete unread entity records sent from a specific contact to a specific recipient
     List<ChatMessage> findByToEmailAndFromEmailAndReadFalse(
             String toEmail,
             String fromEmail
     );
 
+    // Derived Query Method: Serves the exact same logic as countUnread() above, but generated automatically by Spring
+    // rather than using a hardcoded JPQL string. Returning a primitive 'long' ensures high performance.
     // Needed for unread badges
     long countByToEmailAndFromEmailAndReadFalse(
             String toEmail,

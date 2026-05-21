@@ -17,11 +17,11 @@
         .nav-user{font-size:13px;color:var(--muted)}
         .nav-user strong{color:var(--text)}
         .bell-wrap{position:relative}
-        .bell-btn{width:38px;height:38px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:17px;color:var(--muted);transition:all .15s}
+        .bell-btn{width:38px;height:38px;border-radius:9px;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:17px;color:var(--muted);transition:all .15s}
         .bell-btn:hover{border-color:var(--mid);color:var(--ocean)}
         .bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;font-size:10px;font-weight:600;border-radius:99px;padding:1px 5px;min-width:18px;text-align:center;display:none}
         .bell-badge.show{display:block}
-        .logout-btn{padding:7px 14px;border-radius:8px;background:none;border:1.5px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
+        .logout-btn{padding:7px 14px;border-radius:8px;background:none;border:2px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;cursor:pointer;transition:all .15s}
         .logout-btn:hover{border-color:var(--danger);color:var(--danger)}
         .layout{display:flex;flex:1}
         aside.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 0}
@@ -42,7 +42,7 @@
         .go-btn:hover{opacity:.9}
         .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
         .section-title{font-size:15px;font-weight:600}
-        .search-box{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;outline:none;width:200px;transition:border-color .15s}
+        .search-box{background:var(--surface);border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 12px;outline:none;width:200px;transition:border-color .15s}
         .search-box:focus{border-color:var(--mid)}
         .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
         table{width:100%;border-collapse:collapse}
@@ -59,7 +59,7 @@
         .role-pill{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:99px}
         .role-USER{background:#eff6ff;color:var(--ocean);border:1px solid #bfdbfe}
         .role-ADMIN{background:#fef3c7;color:var(--gold);border:1px solid #fde68a}
-        .msg-link{font-size:12px;color:var(--ocean);text-decoration:none;font-weight:500;padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;transition:all .15s}
+        .msg-link{font-size:12px;color:var(--ocean);text-decoration:none;font-weight:500;padding:5px 12px;border:2px solid var(--border);border-radius:6px;transition:all .15s}
         .msg-link:hover{background:var(--bg);border-color:var(--mid)}
         .notif-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.15);z-index:200}
         .notif-overlay.open{display:block}
@@ -80,7 +80,7 @@
         .quick-reply{padding:14px;border-top:1px solid var(--border);flex-shrink:0}
         .quick-reply p{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
         .quick-row{display:flex;gap:6px}
-        .quick-row select,.quick-row input{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 10px;outline:none}
+        .quick-row select,.quick-row input{background:var(--bg);border:2px solid var(--border);border-radius:7px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;padding:8px 10px;outline:none}
         .quick-row select{width:120px;flex-shrink:0}
         .quick-row input{flex:1}
         .quick-row input:focus{border-color:var(--mid)}
@@ -225,11 +225,11 @@
 
     async function fetchUnreadList() {
         var res  = await fetch('/api/chat/unread-list');
-        var msgs = await res.json();
-        updateBadge(msgs.length);
+        var messages = await res.json();
+        updateBadge(messages.length);
         var list = document.getElementById('notifList');
-        if (!msgs.length) { list.innerHTML = '<div class="notif-empty">All caught up 🎉</div>'; return; }
-        list.innerHTML = msgs.map(function(m) {
+        if (!messages.length) { list.innerHTML = '<div class="notif-empty">All caught up 🎉</div>'; return; }
+        list.innerHTML = messages.map(function(m) {
             return '<div class="notif-item unread" onclick="goToChat(\'' + esc(m.fromEmail) + '\')">'
                 + '<div class="n-av">' + (m.fromName ? m.fromName[0].toUpperCase() : '?') + '</div>'
                 + '<div class="n-info"><div class="n-name">' + esc(m.fromName) + '</div>'

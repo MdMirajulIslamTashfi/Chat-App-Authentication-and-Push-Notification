@@ -15,6 +15,8 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
     // Path to the service account JSON inside src/main/resources/
+    // Spring reads this from application.properties or application.yml.
+    // If 'firebase.service-account-path' is not specified there, it defaults to "firebase-service-account.json"
     @Value("${firebase.service-account-path:firebase-service-account.json}")
     private String serviceAccountPath;
 
@@ -22,15 +24,19 @@ public class FirebaseConfig {
     public void initialize() {
         if (!FirebaseApp.getApps().isEmpty()) return;
         try {
-            GoogleCredentials credentials = GoogleCredentials.fromStream(
-                    new ClassPathResource(serviceAccountPath).getInputStream()
-            );
+            // Firebase throws an exception if you try to initialize it more than once.
+            // This check safely exits the method if FirebaseApp has already been spun up elsewhere.
+            GoogleCredentials credentials = GoogleCredentials.fromStream(new ClassPathResource(serviceAccountPath).getInputStream());
+            // Builds the configuration settings that the Firebase SDK needs using your Google credentials
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(credentials)
                     .build();
+            // Officially spins up the Firebase Admin SDK connection using those options
             FirebaseApp.initializeApp(options);
             log.info("Firebase Admin SDK initialized.");
         } catch (IOException e) {
+            // A graceful fallback. If someone clones your repo but doesn't have your private JSON key,
+            // the app still boots up successfully, but logs a clear instruction on what's missing.
             log.warn("Firebase service account not found — push notifications disabled. " +
                     "Add firebase-service-account.json to src/main/resources/");
         }
