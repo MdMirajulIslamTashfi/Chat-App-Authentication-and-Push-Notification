@@ -112,6 +112,8 @@ public class UserController {
         User user = userService.findByEmail(auth.getName());
         model.addAttribute("user", user);
         model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
+        model.addAttribute("allUsers", userService.getAllExcept(user.getEmail()));
+        model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
         return "user-dashboard";
     }
 

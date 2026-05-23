@@ -126,7 +126,7 @@
             padding: 7px 14px;
             border-radius: 8px;
             background: none;
-            border: 2px solid var(--border);
+            border: 1.5px solid var(--border);
             color: var(--muted);
             font-family: 'Inter', sans-serif;
             font-size: 13px;
@@ -269,7 +269,7 @@
             margin: 10px;
             padding: 9px;
             text-align: center;
-            border: 2px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: 8px;
             font-size: 12px;
             color: var(--ocean);
@@ -307,7 +307,7 @@
         .quick-row input {
             flex: 1;
             background: var(--bg);
-            border: 2px solid var(--border);
+            border: 1.5px solid var(--border);
             border-radius: 7px;
             color: var(--text);
             font-family: 'Inter', sans-serif;
@@ -329,6 +329,19 @@
             font-size: 12px;
             padding: 8px 14px;
             cursor: pointer;
+        }
+
+        .quick-row select {
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            padding: 8px 10px;
+            outline: none;
+            width: 130px;
+            flex-shrink: 0;
         }
 
         /* MAIN */
@@ -544,30 +557,15 @@
     <button class="mark-all-btn" onclick="markAllRead()">Mark all as read</button>
     <div class="quick-reply">
         <p>Quick Reply</p>
-
-        <div style="margin-bottom:8px;">
-            <select id="adminSelect" style="
-        width:100%;
-        padding:8px 10px;
-        border-radius:7px;
-        border:2px solid var(--border);
-        background:var(--bg);
-        font-family:'Inter',sans-serif;
-        font-size:13px;
-        outline:none;
-    ">
-                <option value="">Select admin...</option>
-            </select>
-        </div>
-
         <div class="quick-row">
-            <label for="qMsg"></label>
-            <input
-                    type="text"
-                    id="qMsg"
-                    placeholder="Type a message…"
-                    onkeydown="if(event.key==='Enter')quickReply()"
-            />
+            <select id="qRecipient">
+                <option value="">Select user…</option>
+                <th:block th:each="u : ${allUsers}">
+                    <option th:value="${u.email}" th:text="${u.fullName()}">User</option>
+                </th:block>
+            </select>
+            <label for="qMsg"></label><input type="text" id="qMsg" placeholder="Message…"
+                                             onkeydown="if(event.key==='Enter')quickReply()"/>
             <button onclick="quickReply()">Send</button>
         </div>
     </div>
@@ -628,7 +626,6 @@
         messagingSenderId: /*[[${fbSenderId}]]*/ '',
         appId:             /*[[${fbAppId}]]*/ ''
     };
-    window.ADMIN_EMAIL = /*[[${adminEmail}]]*/ '';
     window.VAPID = /*[[${fbVapidKey}]]*/ '';
 </script>
 
@@ -660,20 +657,14 @@
     // Load unread messages into notification drawer
     async function fetchUnreadList() {
         const res = await fetch('/api/chat/unread-list');
-        const messages = await res.json();
+        const msgs = await res.json();
         const list = document.getElementById('notifList');
-        fetch('/api/chat/unread-total')
-            .then(function (r) {
-                return r.json();
-            })
-            .then(function (d) {
-                updateBadge(d.total || 0);
-            });
-        if (!messages.length) {
+        updateBadge(msgs.length);
+        if (!msgs.length) {
             list.innerHTML = '<div class="notif-empty">No new messages 🎉</div>';
             return;
         }
-        list.innerHTML = messages.map(function (m) {
+        list.innerHTML = msgs.map(function (m) {
             return '<div class="notif-item unread" onclick="goToChat(\'' + esc(m.fromEmail) + '\')">'
                 + '<div class="n-av">' + (m.fromName ? m.fromName[0].toUpperCase() : '?') + '</div>'
                 + '<div class="n-info">'
@@ -684,18 +675,13 @@
     }
 
     function goToChat(email) {
-        fetch('/api/chat/read?sender=' + encodeURIComponent(email), {
-            method: 'POST'
-        }).finally(function() {
-            window.location.href =
-                '/user/chat?open=' + encodeURIComponent(email);
-        });
+        window.location.href = '/user/chat?open=' + encodeURIComponent(email);
     }
 
     async function markAllRead() {
         const res = await fetch('/api/chat/unread-list');
-        const messages = await res.json();
-        const emails = [...new Set(messages.map(function (m) {
+        const msgs = await res.json();
+        const emails = [...new Set(msgs.map(function (m) {
             return m.fromEmail;
         }))];
         await Promise.all(emails.map(function (e) {
@@ -713,60 +699,14 @@
         document.getElementById('unreadVal').textContent = n;
     }
 
-    async function loadAdmins() {
-        try {
-            const res = await fetch('/api/admins');
-            const admins = await res.json();
-
-            const select = document.getElementById('adminSelect');
-
-            admins.forEach(function (admin) {
-                const opt = document.createElement('option');
-                opt.value = admin.email;
-                opt.textContent = admin.name + ' (' + admin.email + ')';
-                select.appendChild(opt);
-            });
-
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
     // Quick reply to first admin via WebSocket
     async function quickReply() {
+        var to      = document.getElementById('qRecipient').value;
         var content = document.getElementById('qMsg').value.trim();
-        var adminEmail = document.getElementById('adminSelect').value;
-        if (!adminEmail) {
-            showToast(
-                'Select admin',
-                'Please choose an admin first.'
-            );
-            return;
-        }
-        if (!content) return;
-
-        if (!window.stompClient || !window.stompClient.connected) {
-            showToast(
-                'Connection lost',
-                'Realtime chat is disconnected.'
-            );
-
-            return;
-        }
-        window.stompClient.send(
-            '/app/chat.send',
-            {},
-            JSON.stringify({
-                toEmail: adminEmail,
-                content: content
-            })
-        );
-
+        if (!to || !content || !window.stompClient || !window.stompClient.connected) return;
+        window.stompClient.send('/app/chat.send', {}, JSON.stringify({ toEmail: to, content: content }));
         document.getElementById('qMsg').value = '';
-        showToast(
-            'Sent',
-            'Message delivered to admin.'
-        );
+        showToast('Sent', 'Message delivered.');
     }
 
     function showToast(title, body, onClick) {
@@ -880,7 +820,6 @@
                 updateBadge(d.total || 0);
             });
     }, 10000);
-    loadAdmins();
 </script>
 </body>
 </html>
