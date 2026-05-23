@@ -345,7 +345,16 @@
             display: inline-block;
             width: 7px;
             height: 7px;
-            background: #10b981;
+            background: #059669;   /* was #10b981 — darker green */
+            border-radius: 50%;
+            margin-right: 4px
+        }
+
+        .offline-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: #94a3b8;
             border-radius: 50%;
             margin-right: 4px
         }
@@ -628,13 +637,16 @@
                     <!-- Message Preview snippet window placeholder -->
                     <div class="c-preview" th:id="'prev-' + ${c.email}">Click to chat</div>
                 </div>
+                <!-- ✅ CORRECT — presence dot + time + badge all in one .c-right -->
                 <div class="c-right">
-                    <span class="c-time" th:id="'time-'  + ${c.email}"></span>
-                    <!-- Unread Count Badge: shows 'show' CSS class context only when data values exceed zero -->
+                    <span class="presence-dot"
+                    style="display:inline-block;width:8px;height:8px;border-radius:50%;
+                    background:#94a3b8;margin-bottom:4px"></span>
+                    <span class="c-time" th:id="'time-' + ${c.email}"></span>
                     <span class="c-badge" th:id="'badge-' + ${c.email}"
                           th:classappend="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ' show'"
                           th:text="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ${unreadCounts[c.email]} : ''">
-          </span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -726,6 +738,11 @@
             handleIncoming(msg);
         });
 
+        stompClient.subscribe('/topic/presence', function(frame) {
+            var data = JSON.parse(frame.body);
+            applyPresence(data.email, data.status);
+        });
+
         // Read receipts from the other person
         stompClient.subscribe('/user/queue/read', function (frame) {
             var data = JSON.parse(frame.body);
@@ -743,6 +760,7 @@
         });
 
         loadUnreadCounts();
+        loadInitialPresence();
         loadConversations();
 
         // Auto-open if ?open= param present OR last-remembered contact
@@ -759,6 +777,10 @@
         var initials = el.dataset.initials;
         var role = el.dataset.role;
         renderedIds = new Set(); // Flushes cached identity snapshots for the new thread
+        var isOnline = onlineSet.has(email);
+        var statusHtml = isOnline
+            ? '<span class="online-dot"></span>Online'
+            : '<span class="offline-dot"></span>Offline';
 
         // Remember which contact is open so it survives page navigations
         // Commits open chat context states to localStorage to persist across navigation actions
@@ -802,7 +824,7 @@
             + 'style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;padding:0 6px">'
             + '&times;</button>'
             + '</div>'
-            + '<div class="ch-sub"><span class="online-dot"></span>Online</div></div>'
+            + '<div class="ch-sub">' + statusHtml + '</div></div>'
             + '</div>'
             + '<div class="messages" id="msgList"></div>'
             + '<div class="input-area">'
@@ -1203,6 +1225,59 @@
             closeChat();
         }
     });
+
+    // ─── Presence ────────────────────────────────────────────────────────────────
+    var onlineSet = new Set();
+
+    function loadInitialPresence() {
+        fetch('/api/presence/online')
+            .then(r => r.json())
+            .then(emails => {
+                emails.forEach(e => onlineSet.add(e));
+                refreshAllPresenceDots();
+
+                // ← KEY FIX: if a chat is already open, correct its header now
+                if (currentEmail) {
+                    var headerSub = document.querySelector('.ch-sub');
+                    if (headerSub) {
+                        var isOnline = onlineSet.has(currentEmail);
+                        headerSub.innerHTML = isOnline
+                            ? '<span class="online-dot"></span>Online'
+                            : '<span class="offline-dot"></span>Offline';
+                    }
+                }
+            });
+    }
+
+    function refreshAllPresenceDots() {
+        document.querySelectorAll('.contact-item').forEach(el => {
+            var email = el.dataset.email;
+            var dot = el.querySelector('.presence-dot');
+            if (!dot) return;
+            dot.style.background = onlineSet.has(email) ? '#059669' : '#94a3b8';
+            dot.title = onlineSet.has(email) ? 'Online' : 'Offline';
+        });
+    }
+
+    function applyPresence(email, status) {
+        if (status === 'ONLINE') onlineSet.add(email);
+        else onlineSet.delete(email);
+
+        var dot = document.querySelector('#c-' + CSS.escape(email) + ' .presence-dot');
+        if (dot) {
+            dot.style.background = status === 'ONLINE' ? '#059669' : '#94a3b8';
+            dot.title = status === 'ONLINE' ? 'Online' : 'Offline';
+        }
+
+        if (email === currentEmail) {
+            var headerSub = document.querySelector('.ch-sub');
+            if (headerSub) {
+                headerSub.innerHTML = status === 'ONLINE'
+                    ? '<span class="online-dot"></span>Online'
+                    : '<span class="offline-dot"></span>Offline';
+            }
+        }
+    }
 
     // ─── Boot ─────────────────────────────────────────────────────────────────────
     if ('Notification' in window && Notification.permission === 'default') {
