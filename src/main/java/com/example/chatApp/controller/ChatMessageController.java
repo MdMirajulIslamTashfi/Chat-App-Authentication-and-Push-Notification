@@ -223,6 +223,6 @@ public class ChatMessageController {
     public record ReadReceipt(String messageId, String sender) {
     }
     private String conflict (){
-        return "conflict in image";
+        return "conflict in main";
     }
 }
