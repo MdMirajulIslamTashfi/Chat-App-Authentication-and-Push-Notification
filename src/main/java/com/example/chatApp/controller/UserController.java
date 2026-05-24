@@ -44,11 +44,6 @@ public class UserController {
     @PostMapping("/register")
     public String handleRegister(@ModelAttribute RegisterDto dto, Model model) {
         try {
-            if (!dto.getPassword().equals(dto.getConfirmPassword())) {
-                model.addAttribute("error", "Passwords don't match");
-                model.addAttribute("dto", dto);
-                return "register";
-            }
             userService.register(dto);
             return "redirect:/login?registered=true";
         } catch (Exception e) {
@@ -79,14 +74,12 @@ public class UserController {
             // expires when token expires (convert ms → seconds)
             cookie.setMaxAge((int) (result.getExpiresInMs() / 1000));
             response.addCookie(cookie);
-
             // Redirect based on role
             User user = userService.findByEmail(result.getEmail());
             if (user.getRole() == Roles.ADMIN) {
                 return "redirect:/admin/dashboard";
             }
             return "redirect:/user/dashboard";
-
         } catch (Exception ex) {
             model.addAttribute("error", ex.getMessage());
             model.addAttribute("dto", dto);
@@ -112,6 +105,7 @@ public class UserController {
         User user = userService.findByEmail(auth.getName());
         model.addAttribute("user", user);
         model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
+        model.addAttribute("allUsers", userService.getAllExcept(user.getEmail()));
         return "user-dashboard";
     }
 
