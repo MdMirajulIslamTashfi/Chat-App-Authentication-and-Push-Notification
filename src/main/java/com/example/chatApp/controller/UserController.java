@@ -74,14 +74,12 @@ public class UserController {
             // expires when token expires (convert ms → seconds)
             cookie.setMaxAge((int) (result.getExpiresInMs() / 1000));
             response.addCookie(cookie);
-
             // Redirect based on role
             User user = userService.findByEmail(result.getEmail());
             if (user.getRole() == Roles.ADMIN) {
                 return "redirect:/admin/dashboard";
             }
             return "redirect:/user/dashboard";
-
         } catch (Exception ex) {
             model.addAttribute("error", ex.getMessage());
             model.addAttribute("dto", dto);
@@ -104,44 +102,22 @@ public class UserController {
     @GetMapping("/user/dashboard")
     public String userDashboard(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         User user = userService.findByEmail(auth.getName());
-
         model.addAttribute("user", user);
-
-        model.addAttribute(
-                "totalUnread",
-                chatMessageService.totalUnread(user.getEmail())
-        );
-
+        model.addAttribute("totalUnread", chatMessageService.totalUnread(user.getEmail()));
+        model.addAttribute("allUsers", userService.getAllExcept(user.getEmail()));
         return "user-dashboard";
     }
 
     // ------------------------- ADMIN DASHBOARD ----------------------------------
     @GetMapping("/admin/dashboard")
     public String adminDashboard(Model model) {
-
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         User admin = userService.findByEmail(auth.getName());
-
         model.addAttribute("admin", admin);
-
-        model.addAttribute(
-                "allUsers",
-                userService.getAllExcept(admin.getEmail())
-        );
-
-        model.addAttribute(
-                "totalUsers",
-                userService.getAllUsers().size()
-        );
-
-        model.addAttribute(
-                "totalUnread",
-                chatMessageService.totalUnread(admin.getEmail())
-        );
-
+        model.addAttribute("allUsers", userService.getAllExcept(admin.getEmail()));
+        model.addAttribute("totalUsers", userService.getAllUsers().size());
+        model.addAttribute("totalUnread", chatMessageService.totalUnread(admin.getEmail()));
         return "admin-dashboard";
     }
 }
