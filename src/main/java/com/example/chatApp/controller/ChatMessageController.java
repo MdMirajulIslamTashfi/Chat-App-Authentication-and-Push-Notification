@@ -222,4 +222,7 @@ public class ChatMessageController {
     // Java Record type: A lightweight data-carrier capsule structure used to rapidly map incoming JSON fields for read-receipt payloads
     public record ReadReceipt(String messageId, String sender) {
     }
+    private String conflict (){
+        return "conflict in main";
+    }
 }
