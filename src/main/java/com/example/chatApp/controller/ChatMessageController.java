@@ -7,6 +7,7 @@ import com.example.chatApp.enums.Roles;
 import com.example.chatApp.repositories.UserRepository;
 import com.example.chatApp.service.ChatMessageService;
 import com.example.chatApp.service.FirebaseNotificationService;
+import com.example.chatApp.service.ImageStorageService;
 import com.example.chatApp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +15,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +37,7 @@ public class ChatMessageController {
     private final SimpMessagingTemplate broker;
     private final FirebaseNotificationService fcmService;
     private final UserRepository userRepository;
+    private final ImageStorageService imageStorageService;
 
     // ── User chat page ─────────────────────────────────────────────────────
     @GetMapping("/user/chat")
@@ -222,7 +227,59 @@ public class ChatMessageController {
     // Java Record type: A lightweight data-carrier capsule structure used to rapidly map incoming JSON fields for read-receipt payloads
     public record ReadReceipt(String messageId, String sender) {
     }
-    private String conflict (){
-        return "conflict in main";
+
+    /**
+     * POST /api/chat/upload-image
+     * Accepts a multipart image, stores it, returns the public URL.
+     * The client then sends a WebSocket message with that URL as imageUrl.
+     */
+    @PostMapping("/api/chat/upload-image")   // ← correct full path
+    @ResponseBody                             // ← needed since class is @Controller
+    public ResponseEntity<?> uploadImage(@RequestParam("files") List<MultipartFile> files,
+                                         Authentication authentication) {
+        try {
+            List<String> urls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                urls.add(imageStorageService.store(file, authentication.getName()));
+            }
+            return ResponseEntity.ok(Map.of("imageUrls", urls));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Image upload failed: {}", e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Upload failed. Please try again."));
+        }
+    }
+
+    @DeleteMapping("/api/chat/message/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteMessage(@PathVariable String id) {
+        String myEmail = getEmail();
+        try {
+            // Grab recipient BEFORE deletion so we can notify them via WebSocket
+            String recipientEmail = chatService.getMessageRecipient(id, myEmail);
+
+            chatService.deleteMessage(id, myEmail);
+
+            // Push real-time deletion event to the other person's UI
+            if (recipientEmail != null) {
+                broker.convertAndSendToUser(
+                        recipientEmail, "/queue/deleted",
+                        Map.of("messageId", id)
+                );
+            }
+
+            return ResponseEntity.ok(Map.of("status", "deleted", "messageId", id));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (com.example.chatApp.exceptionHandler.ForbiddenException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Delete message failed: {}", e.getMessage());
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Could not delete message."));
+        }
     }
 }

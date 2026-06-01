@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -30,9 +32,19 @@ public class ChatMessage {
     private LocalDateTime sentAt;
     private LocalDateTime readAt;
 
+    // Relative URL like "/uploads/images/abc123.jpg" — null for text-only messages
+    @Convert(converter = com.example.chatApp.config.StringListConverter.class)
+    @Column(name = "image_url", columnDefinition = "TEXT")   // reuses existing column name
+    @Builder.Default
+    private List<String> imageUrls = new ArrayList<>();
+
     @Builder.Default
     @Column(nullable = false)
     private boolean read = false;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean deleted = false;
 
     @Enumerated(EnumType.STRING)
     private MessageType type = MessageType.DIRECT;

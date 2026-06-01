@@ -21,6 +21,7 @@ public class ChatMessageService {
 
     private final ChatMessageRepository repo;
     private final UserService userService;
+    private final ImageStorageService imageStorageService;
 
     /**
      * Saves the message and returns a base DTO.
@@ -32,7 +33,8 @@ public class ChatMessageService {
         ChatMessage msg = repo.save(ChatMessage.builder()
                 .fromEmail(fromEmail)
                 .toEmail(in.getToEmail())
-                .content(in.getContent())
+                .content(in.getContent() != null ? in.getContent() : null)
+                .imageUrls(in.getImageUrls() != null ? in.getImageUrls() : new ArrayList<>())
                 .type(MessageType.DIRECT)
                 .sentAt(LocalDateTime.now())
                 .read(false)
@@ -96,8 +98,32 @@ public class ChatMessageService {
             }
             ConversationDto dto = new ConversationDto();
             dto.setEmail(partner);
-            dto.setLastMessage(msg.getContent());
             dto.setLastTime(msg.getSentAt());
+            dto.setImageUrls(msg.getImageUrls());
+
+            // Smart last-message preview
+//            boolean hasImages = msg.getImageUrls() != null && !msg.getImageUrls().isEmpty();
+//            boolean hasText   = msg.getContent() != null && !msg.getContent().isBlank();
+//            if (hasImages && !hasText) {
+//                dto.setLastMessage("📷 " + msg.getImageUrls().size()
+//                        + (msg.getImageUrls().size() == 1 ? " Image" : " Images"));
+//            } else {
+//                dto.setLastMessage(msg.getContent());
+//            }
+            if (msg.isDeleted()) {
+                dto.setLastMessage("🚫 This message was deleted");
+                dto.setImageUrls(new ArrayList<>());
+            } else {
+                boolean hasImages = msg.getImageUrls() != null && !msg.getImageUrls().isEmpty();
+                boolean hasText   = msg.getContent()   != null && !msg.getContent().isBlank();
+                if (hasImages && !hasText) {
+                    dto.setLastMessage("📷 " + msg.getImageUrls().size()
+                            + (msg.getImageUrls().size() == 1 ? " Image" : " Images"));
+                } else {
+                    dto.setLastMessage(msg.getContent());
+                }
+                dto.setImageUrls(msg.getImageUrls());
+            }
 
             long unread = repo.countByToEmailAndFromEmailAndReadFalse(myEmail, partner);
             dto.setUnread(unread);
@@ -126,9 +152,43 @@ public class ChatMessageService {
                 .fromName(fromName)
                 .toEmail(m.getToEmail())
                 .content(m.getContent())
+                .imageUrls(m.getImageUrls())
                 .sentAt(m.getSentAt())   // LocalDateTime — serialized as ISO string via @JsonFormat
                 .read(m.isRead())
+                .deleted(m.isDeleted())
                 .mine(mine)
                 .build();
+    }
+
+    // ── get recipient email before deletion (used by controller for WS notify) ──
+    public String getMessageRecipient(String messageId, String requesterEmail) {
+        return repo.findById(messageId)
+                .filter(m -> m.getFromEmail().equalsIgnoreCase(requesterEmail))
+                .map(ChatMessage::getToEmail)
+                .orElse(null);
+    }
+
+    // ── delete message — sender only ────────────────────────────────────────
+    public void deleteMessage(String messageId, String requesterEmail) {
+        ChatMessage msg = repo.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found."));
+
+        if (!msg.getFromEmail().equalsIgnoreCase(requesterEmail)) {
+            throw new com.example.chatApp.exceptionHandler.ForbiddenException(
+                    "You can only delete your own messages.");
+        }
+
+        // Remove image files from disk
+        if (msg.getImageUrls() != null) {
+            msg.getImageUrls().forEach(imageStorageService::deleteFile);
+        }
+
+        // ── Soft delete: keep the row, clear content, mark deleted ───────────────
+        msg.setDeleted(true);
+        msg.setContent("");
+        msg.setImageUrls(new ArrayList<>());
+        repo.save(msg);   // ← save, NOT deleteById
+
+        log.info("Message {} soft-deleted by {}", messageId, requesterEmail);
     }
 }

@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Chat — ChatApp</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -299,7 +300,8 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden
+            overflow: hidden;
+            min-height: 0;
         }
 
         .chat-header {
@@ -345,7 +347,7 @@
             display: inline-block;
             width: 7px;
             height: 7px;
-            background: #059669;   /* was #10b981 — darker green */
+            background: #059669;
             border-radius: 50%;
             margin-right: 4px
         }
@@ -366,7 +368,8 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            background: var(--bg)
+            background: var(--bg);
+            min-height: 0;
         }
 
         .messages::-webkit-scrollbar {
@@ -401,7 +404,7 @@
         .msg {
             display: flex;
             flex-direction: column;
-            max-width: 68%;
+            max-width: min(68%, 520px);
             animation: msgIn .18s ease
         }
 
@@ -476,6 +479,230 @@
             font-weight: 700
         }
 
+        /* Attach button */
+        .attach-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--bg);
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all .15s;
+        }
+
+        .attach-btn:hover {
+            border-color: var(--mid);
+            color: var(--ocean);
+            background: #fff;
+        }
+
+        /* Image preview bar — sits directly above the input bar */
+        .img-preview-bar {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .preview-thumbs {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            overflow-x: auto;
+            padding: 2px 0;
+        }
+
+        .preview-thumb {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .preview-thumb img {
+            width: 52px;
+            height: 52px;
+            object-fit: cover;
+            border-radius: 7px;
+            border: 1.5px solid var(--border);
+            display: block;
+            background: #e2e8f0;
+        }
+
+        .remove-thumb {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 17px;
+            height: 17px;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .preview-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex-shrink: 0;
+            align-items: flex-end;
+        }
+
+        .img-upload-progress {
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .cancel-img {
+            background: none;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-family: 'Inter', sans-serif;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+
+        .cancel-img:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* Image grid inside bubble */
+        .img-grid {
+            display: grid;
+            gap: 3px;
+            border-radius: 10px;
+            overflow: hidden;
+            max-width: min(240px, 100%);
+        }
+
+        .img-grid-1 { grid-template-columns: 1fr; }
+        .img-grid-2, .img-grid-3, .img-grid-4 { grid-template-columns: 1fr 1fr; }
+
+        .img-grid .chat-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 0;
+            max-width: none;
+            max-height: none;
+            display: block;
+            cursor: zoom-in;
+            transition: opacity .15s;
+        }
+
+        .img-grid .chat-img:hover { opacity: .88; }
+        .img-grid-1 .chat-img { height: 175px; }
+        .img-grid-3 .chat-img:first-child { grid-column: span 2; height: 135px; }
+
+        .img-more {
+            background: rgba(0,0,0,.48);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: default;
+            height: 110px;
+        }
+
+        .img-caption {
+            margin-top: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+            padding: 0 2px;
+        }
+
+        /* Bubble wrapper */
+        .bubble-wrap {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        /* Menu button */
+        .msg-menu-btn {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0,0,0,.40);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            opacity: 0;
+            z-index: 5;
+            font-size: 11px;
+            line-height: 1;
+            transition: opacity .15s, background .15s, transform .12s;
+        }
+
+        .msg:hover .msg-menu-btn {
+            opacity: 1;
+        }
+
+        .msg-menu-btn:hover {
+            background: rgba(0,0,0,.62);
+            transform: scale(1.08);
+        }
+
+        /* Context menu */
+        .msg-ctx-menu {
+            position: fixed;
+            z-index: 2000;
+            min-width: 180px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,.16);
+            animation: ctxIn .14s ease;
+        }
+
+        @keyframes ctxIn {
+            from { opacity: 0; transform: scale(.96) translateY(-6px); }
+            to   { opacity: 1; transform: scale(1)   translateY(0);    }
+        }
+
+        .msg-ctx-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background .12s;
+        }
+
+        .msg-ctx-item:last-child { border-bottom: none; }
+        .msg-ctx-item:hover { background: var(--bg); }
+        .msg-ctx-item.danger { color: var(--danger); }
+
         /* INPUT */
         .input-area {
             background: var(--surface);
@@ -484,7 +711,7 @@
             display: flex;
             align-items: flex-end;
             gap: 10px;
-            flex-shrink: 0
+            flex-shrink: 0;
         }
 
         .msg-input {
@@ -501,7 +728,8 @@
             max-height: 120px;
             min-height: 42px;
             line-height: 1.4;
-            transition: border-color .15s
+            transition: border-color .15s;
+            overflow-y: auto;
         }
 
         .msg-input:focus {
@@ -509,9 +737,16 @@
             background: #fff
         }
 
-        .msg-input::placeholder {
-            color: var(--muted)
+        .msg-input::placeholder { color: var(--muted) }
+
+        /* Consistent scrollbar style matching the rest of the app */
+        .msg-input::-webkit-scrollbar       { width: 4px; }
+        .msg-input::-webkit-scrollbar-track { background: transparent; }
+        .msg-input::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
         }
+        .msg-input::-webkit-scrollbar-thumb:hover { background: var(--light); }
 
         .send-btn {
             width: 42px;
@@ -528,9 +763,7 @@
             transition: background .15s
         }
 
-        .send-btn:hover {
-            background: #005f92
-        }
+        .send-btn:hover { background: #005f92 }
 
         /* STATUS BAR */
         .status-bar {
@@ -551,9 +784,7 @@
             z-index: 50
         }
 
-        .status-bar.show {
-            display: flex
-        }
+        .status-bar.show { display: flex }
 
         .s-dot {
             width: 6px;
@@ -563,22 +794,74 @@
             animation: blink 1.2s ease infinite
         }
 
-        .s-dot:nth-child(2) {
-            animation-delay: .2s
-        }
-
-        .s-dot:nth-child(3) {
-            animation-delay: .4s
-        }
+        .s-dot:nth-child(2) { animation-delay: .2s }
+        .s-dot:nth-child(3) { animation-delay: .4s }
 
         @keyframes blink {
-            0%, 100% {
-                opacity: 1
-            }
-            50% {
-                opacity: .3
-            }
+            0%, 100% { opacity: 1 }
+            50%       { opacity: .3 }
         }
+
+        /* LIGHTBOX */
+        .img-lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.82);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: zoom-out;
+        }
+
+        .img-lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            object-fit: contain;
+            cursor: default;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            background: rgba(255,255,255,.15);
+            border: none;
+            color: #fff;
+            font-size: 28px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            line-height: 1;
+        }
+
+        .lightbox-close:hover { background: rgba(255,255,255,.25); }
+
+        /* Deleted message placeholder */
+        .bubble-deleted {
+            background: transparent !important;
+            border: 1.5px dashed #cbd5e1 !important;
+            color: var(--muted) !important;
+            font-style: italic;
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;   /* disable zoom/click on deleted images */
+            user-select: none;
+        }
+        .msg.mine .bubble-deleted {
+            background: rgba(0, 119, 182, 0.42) !important;  /* semi-transparent ocean blue */
+            border-color: rgba(255, 255, 255, .48) !important;
+            color: rgba(255, 255, 255, .90) !important;
+        }
+
     </style>
 </head>
 <body>
@@ -610,13 +893,11 @@
         <div class="sidebar-header">
             <div class="sidebar-title">Conversations</div>
             <label>
-                <!-- Input listener: Evaluates string queries instantly on typing to screen-filter contact divs -->
                 <input class="search-input" type="text" placeholder="Search contacts…"
                        oninput="filterContacts(this.value)"/>
             </label>
         </div>
         <div class="contact-list" id="contactList">
-            <!-- Thymeleaf loop: Generates an item block for each individual contact within the collection list -->
             <div th:each="c : ${contacts}"
                  class="contact-item"
                  th:id="'c-' + ${c.email}"
@@ -627,20 +908,16 @@
                     data-search=${c.fullName().toLowerCase() + ' ' + c.email.toLowerCase()},
                     data-lasttime='0'"
                  onclick="openChat(this)">
-                <!-- Avatar block: appends 'admin' class conditional variant for specialized styling -->
                 <div class="c-av" th:classappend="${c.role.name() == 'ADMIN'} ? ' admin'">
                     <span th:text="${c.initials()}">AB</span>
                 </div>
                 <div class="c-info">
                     <div class="c-name" th:text="${c.fullName()}">Name</div>
                     <div class="c-role" th:text="${c.role}">USER</div>
-                    <!-- Message Preview snippet window placeholder -->
                     <div class="c-preview" th:id="'prev-' + ${c.email}">Click to chat</div>
                 </div>
-                <!-- ✅ CORRECT — presence dot + time + badge all in one .c-right -->
                 <div class="c-right">
-                    <span class="presence-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;
-                    background:#94a3b8;margin-bottom:4px"></span>
+                    <span class="presence-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;margin-bottom:4px"></span>
                     <span class="c-time" th:id="'time-' + ${c.email}"></span>
                     <span class="c-badge" th:id="'badge-' + ${c.email}"
                           th:classappend="${unreadCounts[c.email] != null and unreadCounts[c.email] > 0} ? ' show'"
@@ -650,16 +927,15 @@
             </div>
         </div>
     </div>
-    <!-- Active messaging focus interface pane -->
+
     <div class="chat-area" id="chatArea">
-        <!-- Default baseline fallback UI placeholder before selection target is loaded -->
         <div class="no-chat">
             <div class="nc-icon">💬</div>
             <p>Select a conversation to start chatting</p>
         </div>
     </div>
 </div>
-<!-- Status bar indicator reflecting the global real-time network layer condition -->
+
 <div class="status-bar" id="statusBar">
     <div class="s-dot"></div>
     <div class="s-dot"></div>
@@ -667,16 +943,11 @@
     <span id="statusText">Connecting…</span>
 </div>
 
-<!-- Server-side data injection: Safely handles variable binding into global JavaScript window scopes -->
 <script th:inline="javascript">
     window.ME_EMAIL = /*[[${me.email}]]*/ '';
-    window.ME_NAME = /*[[${me.fullName()}]]*/ '';
-    window.ME_INIT = /*[[${me.initials()}]]*/ '';
-    // ?open= param takes priority, then localStorage remembers last-open contact across navigations
-    // Checks standard URL variables first (?open=), falls back to local browser cache history mapping
+    window.ME_NAME  = /*[[${me.fullName()}]]*/ '';
+    window.ME_INIT  = /*[[${me.initials()}]]*/ '';
     window.OPEN_EMAIL = new URLSearchParams(location.search).get('open') || '';
-
-    // Maps Firebase SDK credential details dynamically from backend configurations
     window.FB_CONFIG = {
         apiKey:            /*[[${fbApiKey}]]*/ '',
         authDomain:        /*[[${fbAuthDomain}]]*/ '',
@@ -688,250 +959,203 @@
     window.VAPID_KEY = /*[[${fbVapidKey}]]*/ '';
 </script>
 
-<!-- External library engine files handling socket upgrade channels and messaging layer layers -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 <script>
     'use strict';
 
-    var stompClient = null;
+    var stompClient  = null;
     var currentEmail = null;
-    // Tracks message IDs already rendered — prevents duplicates
-    var renderedIds = new Set();
+    var renderedIds  = new Set();
 
-
-    // ----------------------- WebSocket connect ------------------------------------------
+    // ── WebSocket connect ────────────────────────────────────────────────────────
     function connect() {
         showStatus('Connecting…');
-        var sock = new SockJS('/ws'); // Points directly to the registered backend handshake endpoint
+        var sock = new SockJS('/ws');
         stompClient = Stomp.over(sock);
-        // Tracks unique message IDs already loaded onto screen views to prevent duplicates popping up
-        stompClient.debug = null; // Turns off verbose console streaming messages from the STOMP engine
-
-        // Configures continuous ping/pong heartbeats spaced out at 20-second blocks
+        stompClient.debug = null;
         stompClient.heartbeat.outgoing = 20000;
         stompClient.heartbeat.incoming = 20000;
 
-        // Automatically injects the JWT from cookie store headers to authorize connection acceptance
         stompClient.connect({jwt: getCookie('jwt_token')}, onConnected, function () {
-                showStatus('Reconnecting…');
-                // Auto-retry scheduling routine: hits retry routine every 3 seconds if connectivity drops
-                setTimeout(connect, 3000);
-                window.addEventListener('online', () => {
-                    if (!stompClient || !stompClient.connected) {
-                        connect();
-                    }
-                });
-            }
-        );
+            showStatus('Reconnecting…');
+            setTimeout(connect, 3000);
+            window.addEventListener('online', function () {
+                if (!stompClient || !stompClient.connected) connect();
+            });
+        });
     }
 
     function onConnected() {
         hideStatus();
 
-        // Incoming messages
-        // Standard message inbox subscription targeting the private custom channel destination routing parameter
         stompClient.subscribe('/user/queue/messages', function (frame) {
-            var msg = JSON.parse(frame.body);
-            handleIncoming(msg);
+            handleIncoming(JSON.parse(frame.body));
         });
 
-        stompClient.subscribe('/topic/presence', function(frame) {
+        stompClient.subscribe('/topic/presence', function (frame) {
             var data = JSON.parse(frame.body);
             applyPresence(data.email, data.status);
         });
 
-        // Read receipts from the other person
         stompClient.subscribe('/user/queue/read', function (frame) {
             var data = JSON.parse(frame.body);
             if (data.messageId) {
                 var msg = document.getElementById('msg-' + data.messageId);
                 if (msg) {
                     var tick = msg.querySelector('.tick-single');
-                    if (tick) {
-                        // Optimistically swaps out single-check markers to double-check marks live
-                        tick.className = 'tick-double';
-                        tick.textContent = '✓✓';
-                    }
+                    if (tick) { tick.className = 'tick-double'; tick.textContent = '✓✓'; }
                 }
             }
+        });
+
+        stompClient.subscribe('/user/queue/deleted', function (frame) {
+            // var data = JSON.parse(frame.body);
+            // var el = document.getElementById('msg-' + data.messageId);
+            // if (el) {
+            //     el.style.transition = 'opacity .2s';
+            //     el.style.opacity = '0';
+            //     setTimeout(function () { if (el.parentNode) el.remove(); }, 220);
+            // }
+            var data = JSON.parse(frame.body);
+            // Show placeholder to the recipient too — same as sender sees
+            markAsDeleted(document.getElementById('msg-' + data.messageId));
         });
 
         loadUnreadCounts();
         loadInitialPresence();
         loadConversations();
 
-        // Auto-open if ?open= param present OR last-remembered contact
         if (window.OPEN_EMAIL) {
             var el = document.getElementById('c-' + window.OPEN_EMAIL);
             if (el) openChat(el);
         }
     }
 
-    // --------------------------- Open a chat thread -----------------------------------
+    // ── Open a chat thread ───────────────────────────────────────────────────────
     function openChat(el) {
-        var email = el.dataset.email;
-        var name = el.dataset.name;
+        var email    = el.dataset.email;
+        var name     = el.dataset.name;
         var initials = el.dataset.initials;
-        var role = el.dataset.role;
-        renderedIds = new Set(); // Flushes cached identity snapshots for the new thread
-        var isOnline = onlineSet.has(email);
+        var role     = el.dataset.role;
+
+        localStorage.setItem('chat_open_' + window.ME_EMAIL, email);
+
+        if (currentEmail === email && document.getElementById('msgList')) {
+            var inp = document.getElementById('msgInput');
+            if (inp) inp.focus();
+            return;
+        }
+
+        currentEmail = email;
+        renderedIds  = new Set();
+
+        document.querySelectorAll('.contact-item').forEach(function (i) { i.classList.remove('active'); });
+        el.classList.add('active');
+
+        var badge = document.getElementById('badge-' + email);
+        if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
+
+        var isOnline   = onlineSet.has(email);
         var statusHtml = isOnline
             ? '<span class="online-dot"></span>Online'
             : '<span class="offline-dot"></span>Offline';
 
-        // Remember which contact is open so it survives page navigations
-        // Commits open chat context states to localStorage to persist across navigation actions
-        localStorage.setItem('chat_open_' + window.ME_EMAIL, email);
-
-        // If this thread is already open, don't wipe and reload — just refocus
-        // Guard logic: avoids unnecessary UI flashes if someone clicks on an already active panel
-        if (currentEmail === email && document.getElementById('msgList')) {
-            document.getElementById('msgInput') && document.getElementById('msgInput').focus();
-            return;
-        }
-        currentEmail = email;
-        renderedIds = new Set();
-
-        // Visually flags selecting dynamic highlights within list views
-        document.querySelectorAll('.contact-item').forEach(function (i) {
-            i.classList.remove('active');
-        });
-        el.classList.add('active');
-
-        // Clears unread badge element states optimistically on touch initialization
-        var badge = document.getElementById('badge-' + email);
-        if (badge) {
-            badge.textContent = '';
-            badge.classList.remove('show');
-        }
-
-        var avCls = (role === 'ADMIN') ? 'ch-av admin' : 'ch-av';
+        var avCls   = (role === 'ADMIN') ? 'ch-av admin' : 'ch-av';
         var rolePill = (role === 'ADMIN')
             ? '<span style="font-size:10px;font-weight:600;background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 7px;margin-left:6px">Admin</span>'
             : '';
 
-        // Overwrites the inactive container interface with dynamic interactive thread templates
+        // Build chat area: header → message list → input bar
+        // The preview bar will be dynamically inserted between msgList and input-area
         document.getElementById('chatArea').innerHTML =
             '<div class="chat-header">'
             + '<div class="' + avCls + '">' + esc(initials) + '</div>'
             + '<div style="flex:1">'
             + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
             + '<div class="ch-name">' + esc(name) + rolePill + '</div>'
-            + '<button onclick="closeChat()" '
-            + 'style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;padding:0 6px">'
-            + '&times;</button>'
+            + '<button onclick="closeChat()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;padding:0 6px">&times;</button>'
             + '</div>'
-            + '<div class="ch-sub">' + statusHtml + '</div></div>'
+            + '<div class="ch-sub">' + statusHtml + '</div>'
+            + '</div>'
             + '</div>'
             + '<div class="messages" id="msgList"></div>'
+            + '<input type="file" id="imgPicker" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none" onchange="handleImagePick(this)"/>'
             + '<div class="input-area">'
+            + '<button class="attach-btn" onclick="document.getElementById(\'imgPicker\').click()" title="Send image">'
+            + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+            + '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'
+            + '</svg></button>'
             + '<textarea class="msg-input" id="msgInput" placeholder="Type a message…" rows="1"'
             + ' onkeydown="onKey(event)" oninput="autoH(this)"></textarea>'
             + '<button class="send-btn" onclick="sendMsg()">&#10148;</button>'
             + '</div>';
 
-        // Mark as read first, then load thread
-        // Hits historical REST data endpoints to load historical message archives
         fetch('/api/chat/thread?with=' + encodeURIComponent(email))
-            .then(function (r) {
-                return r.json();
-            })
+            .then(function (r) { return r.json(); })
             .then(function (msgs) {
-                // Sequentially injects old messages onto screen views
-                msgs.forEach(function (m) {
-                    appendMsg(m);
-                });
+                msgs.forEach(function (m) { appendMsg(m); });
                 scrollBottom();
-                // Dispatches a POST notification request updating receipt targets across server databases
-                return fetch('/api/chat/read?sender=' + encodeURIComponent(email), {
-                    method: 'POST'
-                });
+                return fetch('/api/chat/read?sender=' + encodeURIComponent(email), { method: 'POST' });
             })
             .then(function () {
-                // instantly clear badge visually
-                var badge = document.getElementById('badge-' + email);
-                if (badge) {
-                    badge.textContent = '';
-                    badge.classList.remove('show');
-                }
-                // Recalculates metrics mapping layouts cleanly
+                var b = document.getElementById('badge-' + email);
+                if (b) { b.textContent = ''; b.classList.remove('show'); }
                 loadUnreadCounts();
             })
-            .catch(function (e) {
-                console.error('Failed to load thread:', e);
-            });
+            .catch(function (e) { console.error('Failed to load thread:', e); });
 
         document.getElementById('msgInput').focus();
     }
 
-    // close Chat (inputting esc)
     function closeChat() {
         currentEmail = null;
-        document.querySelectorAll('.contact-item').forEach(function (i) {
-            i.classList.remove('active');
-        });
+        document.querySelectorAll('.contact-item').forEach(function (i) { i.classList.remove('active'); });
         document.getElementById('chatArea').innerHTML =
-            '<div class="no-chat">'
-            + '<div class="nc-icon">💬</div>'
-            + '<p>Select a conversation to start chatting</p>'
-            + '</div>';
+            '<div class="no-chat"><div class="nc-icon">💬</div><p>Select a conversation to start chatting</p></div>';
     }
 
-    // ----------------------------------------- Send a message ----------------------------------
+    // ── Send a message ───────────────────────────────────────────────────────────
     function sendMsg() {
         if (!currentEmail || !stompClient || !stompClient.connected) return;
-        var input = document.getElementById('msgInput');
-        var text = (input.value || '').trim();
-        if (!text) return; // Ignores blank string executions
 
-        // Ignores blank string executions
+        if (pendingFiles.length > 0) {
+            uploadAndSend();
+            return;
+        }
+
+        var input = document.getElementById('msgInput');
+        var text  = (input.value || '').trim();
+        if (!text) return;
+
         input.value = '';
         input.style.height = 'auto';
         input.focus();
 
-        // Dispatches outbound payload packets over STOMP mapping to backend controller endpoints
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             toEmail: currentEmail,
-            content: text
+            content: text,
+            imageUrls: []
         }));
-        // Server echoes back via /user/queue/messages with mine=true → handleIncoming renders it
     }
 
-    // ---------------------------------- Handle an incoming WebSocket message --------------------------------------
+    // ── Handle incoming WebSocket message ────────────────────────────────────────
     function handleIncoming(msg) {
-        // Enforces structural timestamp baselines if data attributes miss targets
-        // Normalise sentAt — server sends ISO string "2026-05-20T12:08:00" via @JsonFormat
         if (!msg.sentAt) msg.sentAt = new Date().toISOString();
 
-        /*
-         * mine=true  → I sent this message. partner = who I sent it to (toEmail).
-         * mine=false → I received this. partner = who sent it (fromEmail).
-         * The server now sends separate DTOs per recipient so this is always correct.
-         * Normalizes owner details conditionally to sort target destinations
-         */
         var partner = msg.mine ? msg.toEmail : msg.fromEmail;
 
         if (partner === currentEmail) {
-            // Target conversation interface is actively open — render into viewing list immediately
-            // This thread is currently open — render immediately
             appendMsg(msg);
             scrollBottom();
 
             if (!msg.mine) {
-                // Automatically triggers DB status updates + sends real-time read receipt packets back across the socket
-                // Mark server-side as read and send WS read receipt
-                fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), {
-                    method: 'POST'
-                }).then(() => {
-                    var badge = document.getElementById('badge-' + msg.fromEmail);
-
-                    if (badge) {
-                        badge.textContent = '';
-                        badge.classList.remove('show');
-                    }
-                });
+                fetch('/api/chat/read?sender=' + encodeURIComponent(msg.fromEmail), { method: 'POST' })
+                    .then(function () {
+                        var b = document.getElementById('badge-' + msg.fromEmail);
+                        if (b) { b.textContent = ''; b.classList.remove('show'); }
+                    });
                 if (stompClient && stompClient.connected) {
                     stompClient.send('/app/chat.read', {}, JSON.stringify({
                         sender: msg.fromEmail,
@@ -940,86 +1164,123 @@
                 }
             }
         } else if (!msg.mine) {
-            // Target conversation is closed background task — updates numerical alert badges on sidebar list
-            // Different thread — bump sidebar badge
             var badge = document.getElementById('badge-' + partner);
             if (badge) {
                 var n = parseInt(badge.textContent || '0') + 1;
                 badge.textContent = n;
                 badge.classList.add('show');
             }
-            // Pushes systemic browser level notification popups out-of-band
             pushNotif('New message from ' + (msg.fromName || 'someone'), msg.content, partner);
         }
 
-        // Always update the sidebar preview + time for this contact, and re-sort
-        updateSidebar(partner, msg.content, msg.sentAt);
-        // If this chat is currently open,
-        // force-clear unread badge instantly
-        if (partner === currentEmail) {
-            var badge = document.getElementById('badge-' + partner);
+        updateSidebar(partner, msg.content, msg.sentAt, msg.imageUrls);
 
-            if (badge) {
-                badge.textContent = '';
-                badge.classList.remove('show');
-            }
+        if (partner === currentEmail) {
+            var b = document.getElementById('badge-' + partner);
+            if (b) { b.textContent = ''; b.classList.remove('show'); }
         } else {
-            // only refresh sidebar unread counts
             loadUnreadCounts();
         }
         sortContacts();
     }
 
-    // ─── Append one message bubble ───────────────────────────────────────────────
+    // ── Append one message bubble ────────────────────────────────────────────────
     function appendMsg(msg) {
         var list = document.getElementById('msgList');
         if (!list) return;
 
-        // Deduplication guard: avoids double rendering identical structures if socket echos collide with HTTP fetch lists
-        // Deduplicate by ID (prevents double-render when history + WS echo arrive)
         if (msg.id) {
             if (renderedIds.has(msg.id)) return;
             renderedIds.add(msg.id);
         }
-
         if (!msg.sentAt) msg.sentAt = new Date().toISOString();
 
-        /*
-         * Determine ownership:
-         *   1. Prefer msg.mine (set correctly by server per recipient)
-         *   2. Fallback: compare fromEmail to ME_EMAIL (catches edge cases)
-         */
         var mine = (msg.mine === true) || (msg.fromEmail === window.ME_EMAIL);
 
         var div = document.createElement('div');
         div.className = 'msg ' + (mine ? 'mine' : 'theirs');
         if (msg.id) div.id = 'msg-' + msg.id;
 
-        var tick = '';
-        if (mine) {
-            // Evaluates checkmark states based on boolean property flags
-            tick = msg.read
-                ? '<span class="tick-double" title="Read">✓✓</span>'
-                : '<span class="tick-single" title="Sent">✓</span>';
+        // ── DELETED MESSAGE: render placeholder and stop here ────────────────────
+        if (msg.deleted) {
+            div.dataset.mine      = mine ? '1' : '0';
+            div.dataset.imageUrls = '[]';
+            div.dataset.content   = '';
+
+            div.innerHTML =
+                (!mine ? '<div class="msg-name">' + esc(msg.fromName || '') + '</div>' : '') +
+                '<div class="bubble-wrap">' +
+                '<div class="bubble bubble-deleted">' +
+                '<i class="fa-solid fa-ban" style="font-size:11px;opacity:.7;flex-shrink:0"></i>' +
+                'This message was deleted' +
+                '</div>' +
+                // No menu button on a deleted message
+                '</div>' +
+                '<div class="msg-foot">' + fmtTime(msg.sentAt) + '</div>';
+
+            requestAnimationFrame(function () {
+                list.appendChild(div);
+                scrollBottom();
+            });
+            return;  // ← skip normal bubble rendering entirely
         }
-        // Assembles item template markup cleanly inside escaping filters
+
+        // ── NORMAL MESSAGE: everything below is unchanged ─────────────────────────
+        var urls = msg.imageUrls || [];
+
+        div.dataset.mine      = mine ? '1' : '0';
+        div.dataset.imageUrls = JSON.stringify(urls);
+        div.dataset.content   = msg.content || '';
+
+        var tick = mine
+            ? (msg.read
+                ? '<span class="tick-double" title="Read">✓✓</span>'
+                : '<span class="tick-single" title="Sent">✓</span>')
+            : '';
+
+        var bubbleContent = '';
+        var hasImages = urls.length > 0;
+        var hasText   = msg.content && msg.content.trim();
+
+        if (hasImages) {
+            var cnt      = urls.length;
+            var gridHtml = '<div class="img-grid img-grid-' + Math.min(cnt, 4) + '">';
+            urls.slice(0, 4).forEach(function (url) {
+                gridHtml += '<img class="chat-img" src="' + esc(url) + '" onclick="openFullImage(\'' + esc(url) + '\')" />';
+            });
+            if (cnt > 4) gridHtml += '<div class="img-more">+' + (cnt - 4) + '</div>';
+            gridHtml += '</div>';
+            bubbleContent = gridHtml;
+            if (hasText) bubbleContent += '<div class="img-caption">' + esc(msg.content) + '</div>';
+        } else if (hasText) {
+            bubbleContent = esc(msg.content);
+        }
+
         div.innerHTML =
             (!mine ? '<div class="msg-name">' + esc(msg.fromName || '') + '</div>' : '') +
-            '<div class="bubble">' + esc(msg.content) + '</div>' +
+            '<div class="bubble-wrap">' +
+            '<div class="bubble">' + bubbleContent + '</div>' +
+            '<button class="msg-menu-btn" onclick="toggleMsgMenu(event,this)" title="Options">' +
+            '<i class="fa-solid fa-angle-down"></i></button>' +
+            '</div>' +
             '<div class="msg-foot">' + fmtTime(msg.sentAt) + (tick ? '&nbsp;' + tick : '') + '</div>';
 
-        // Schedules insertion execution matching browser animation frame refreshes safely
-        requestAnimationFrame(() => {
+        requestAnimationFrame(function () {
             list.appendChild(div);
             scrollBottom();
         });
     }
 
-    // ─── Sidebar: update preview + time + re-sort ────────────────────────────────
-    function updateSidebar(email, preview, sentAt) {
+    // ── Sidebar helpers ──────────────────────────────────────────────────────────
+    function updateSidebar(email, preview, sentAt, imageUrls) {
         var prev = document.getElementById('prev-' + email);
-        if (prev) prev.textContent = preview || '';
-
+        if (prev) {
+            if (imageUrls && imageUrls.length > 0) {
+                prev.textContent = imageUrls.length === 1 ? '📷 Image' : '📷 ' + imageUrls.length + ' Images';
+            } else {
+                prev.textContent = preview || '';
+            }
+        }
         var timeEl = document.getElementById('time-' + email);
         if (timeEl) timeEl.textContent = fmtTime(sentAt);
 
@@ -1031,24 +1292,18 @@
         }
     }
 
-    // Sorts the list entries based on timestamp keys so active channels float to top visibility rows
     function sortContacts() {
-        var list = document.getElementById('contactList');
+        var list  = document.getElementById('contactList');
         var items = Array.from(list.querySelectorAll('.contact-item'));
         items.sort(function (a, b) {
             return parseInt(b.dataset.lasttime || '0') - parseInt(a.dataset.lasttime || '0');
         });
-        items.forEach(function (el) {
-            list.appendChild(el); // Re-appending shifts structural locations implicitly without duplicate creation
-        });
+        items.forEach(function (el) { list.appendChild(el); });
     }
 
-    // ─── Load unread badge counts for sidebar on page load ───────────────────────
     function loadUnreadCounts() {
         fetch('/api/chat/unread-all')
-            .then(function (r) {
-                return r.json();
-            })
+            .then(function (r) { return r.json(); })
             .then(function (data) {
                 Object.keys(data).forEach(function (email) {
                     var badge = document.getElementById('badge-' + email);
@@ -1058,19 +1313,15 @@
                     }
                 });
             })
-            .catch(function (e) {
-                console.warn('unread-all:', e);
-            });
+            .catch(function (e) { console.warn('unread-all:', e); });
     }
 
-    // Grabs active recent channels history blocks to build dashboard templates cleanly on load
     function loadConversations() {
         fetch('/api/chat/conversations')
-            .then(r => r.json())
-            .then(data => {
-                data.forEach(c => {
-                    updateSidebar(c.email, c.lastMessage, c.lastTime);
-                    // unread badge
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                data.forEach(function (c) {
+                    updateSidebar(c.email, c.lastMessage, c.lastTime, c.imageUrls);
                     var badge = document.getElementById('badge-' + c.email);
                     if (badge && c.unread > 0) {
                         badge.textContent = c.unread;
@@ -1079,68 +1330,53 @@
                 });
                 sortContacts();
             })
-            .catch(err => {
-                console.error('Conversation load failed:', err);
-            });
+            .catch(function (err) { console.error('Conversation load failed:', err); });
     }
 
-    // ─── Push notification ────────────────────────────────────────────────────────
-    // senderEmail: when clicked, navigates to chat?open=senderEmail
+    // ── Push notification ────────────────────────────────────────────────────────
     function pushNotif(title, body, senderEmail) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try {
             var notif = new Notification(title, {
                 body: body,
                 icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
-                tag: 'chat-' + (senderEmail || 'msg'), // Tag values group matching categories together cleanly
-                renotify: true // Triggers hardware vibrations alerts even if message groups align identical indicators
+                tag: 'chat-' + (senderEmail || 'msg'),
+                renotify: true
             });
             if (senderEmail) {
                 notif.onclick = function () {
                     window.focus();
-                    // If we're already on the chat page, open the thread directly
                     var contactEl = document.getElementById('c-' + senderEmail);
                     if (contactEl) {
-                        openChat(contactEl); // Simply shifts active view states if target viewport matches
+                        openChat(contactEl);
                     } else {
-                        // On dashboard or another page — navigate to chat
-                        // Forces location redirects mapping views across separate routes
                         window.location.href = '/user/chat?open=' + encodeURIComponent(senderEmail);
                     }
                     notif.close();
                 };
             }
-        } catch (e) { /* some browsers block in certain contexts */
-        }
+        } catch (e) {}
     }
 
-    // ------------------- Firebase Cloud Messaging --------------------------------
-    // Asynchronously loads modular ESM JavaScript versions directly into baseline legacy implementations safely
+    // ── Firebase Cloud Messaging ─────────────────────────────────────────────────
     async function initFCM() {
-        if (!window.FB_CONFIG || !window.FB_CONFIG.apiKey) return; // Safe exit paths if Firebase integration parameters are omitted
+        if (!window.FB_CONFIG || !window.FB_CONFIG.apiKey) return;
         try {
-            const {initializeApp} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-            const {
-                getMessaging,
-                getToken,
-                onMessage
-            } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
-            const app = initializeApp(window.FB_CONFIG);
+            const { initializeApp }                       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+            const { getMessaging, getToken, onMessage }   = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+            const app       = initializeApp(window.FB_CONFIG);
             const messaging = getMessaging(app);
-            const perm = await Notification.requestPermission();
+            const perm      = await Notification.requestPermission();
             if (perm !== 'granted') return;
-
-            // Automatically registers background Service worker dependencies matching asset paths
-            const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            const token = await getToken(messaging, {vapidKey: window.VAPID_KEY, serviceWorkerRegistration: reg});
+            const reg   = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const token = await getToken(messaging, { vapidKey: window.VAPID_KEY, serviceWorkerRegistration: reg });
             if (token) {
                 await fetch('/fcm/token', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({token})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
                 });
             }
-            // Foreground payload interception listener block: handles updates gracefully when app windows stay visible
             onMessage(messaging, function (payload) {
                 var n = payload.notification || {};
                 pushNotif(n.title || 'New message', n.body || '');
@@ -1150,22 +1386,16 @@
         }
     }
 
-    // ------------------------- Helpers -------------------------------------------------
-    // Captures Enter button triggers without Shift variations to submit textual content strings safely
+    // ── Keyboard helpers ─────────────────────────────────────────────────────────
     function onKey(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMsg();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
     }
 
-    // Dynamically grows target height scopes matching message content size parameters (caps vertical bounds up to 120px max)
     function autoH(el) {
         el.style.height = 'auto';
         el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
 
-    // Auto-scrolls message tracking view scopes downward directly targeting fresh interaction streams
     function scrollBottom() {
         var l = document.getElementById('msgList');
         if (l) l.scrollTop = l.scrollHeight;
@@ -1175,19 +1405,10 @@
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    /**
-     * Parse time from LocalDateTime ISO string "2026-05-20T12:08:00"
-     * or a JS ISO string "2026-05-20T12:08:00.000Z".
-     * Returns "HH:MM" or "" if unparseable.
-     */
     function fmtTime(iso) {
         if (!iso) return '';
-        // Handle both "2026-05-20T12:08:00" (no Z) and full ISO with Z
         var d = new Date(iso);
-        // If parsing failed (older browsers reject no-Z ISO), try appending Z
-        if (isNaN(d.getTime())) {
-            d = new Date(iso + 'Z');
-        }
+        if (isNaN(d.getTime())) d = new Date(iso + 'Z');
         if (isNaN(d.getTime())) return '';
         return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     }
@@ -1201,46 +1422,44 @@
         document.getElementById('statusBar').classList.remove('show');
     }
 
-    // Grabs targeted cookie value elements directly by field key lookups
     function getCookie(name) {
-        var found = document.cookie.split(';').map(function (c) {
-            return c.trim();
-        })
-            .find(function (c) {
-                return c.startsWith(name + '=');
-            });
+        var found = document.cookie.split(';').map(function (c) { return c.trim(); })
+            .find(function (c) { return c.startsWith(name + '='); });
         return found ? found.split('=')[1] : '';
     }
 
-    // Performs ultra-fast, local dataset property filters to instantly map or mask visible list entries on input
     function filterContacts(q) {
         q = q.toLowerCase();
         document.querySelectorAll('.contact-item').forEach(function (el) {
             el.style.display = (el.dataset.search || '').includes(q) ? '' : 'none';
         });
     }
-    document.addEventListener('keydown', function(e){
-        if(e.key === 'Escape'){
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            if (document.querySelector('.img-lightbox')) return;
+            if (activeCtxMenu) { closeCtxMenu(); return; }
             closeChat();
         }
     });
 
-    // ─── Presence ────────────────────────────────────────────────────────────────
+    function closeCtxMenu() {
+        if (activeCtxMenu) { activeCtxMenu.remove(); activeCtxMenu = null; }
+    }
+
+    // ── Presence ─────────────────────────────────────────────────────────────────
     var onlineSet = new Set();
 
     function loadInitialPresence() {
         fetch('/api/presence/online')
-            .then(r => r.json())
-            .then(emails => {
-                emails.forEach(e => onlineSet.add(e));
+            .then(function (r) { return r.json(); })
+            .then(function (emails) {
+                emails.forEach(function (e) { onlineSet.add(e); });
                 refreshAllPresenceDots();
-
-                // ← KEY FIX: if a chat is already open, correct its header now
                 if (currentEmail) {
                     var headerSub = document.querySelector('.ch-sub');
                     if (headerSub) {
-                        var isOnline = onlineSet.has(currentEmail);
-                        headerSub.innerHTML = isOnline
+                        headerSub.innerHTML = onlineSet.has(currentEmail)
                             ? '<span class="online-dot"></span>Online'
                             : '<span class="offline-dot"></span>Offline';
                     }
@@ -1249,25 +1468,21 @@
     }
 
     function refreshAllPresenceDots() {
-        document.querySelectorAll('.contact-item').forEach(el => {
-            var email = el.dataset.email;
+        document.querySelectorAll('.contact-item').forEach(function (el) {
             var dot = el.querySelector('.presence-dot');
             if (!dot) return;
-            dot.style.background = onlineSet.has(email) ? '#059669' : '#94a3b8';
-            dot.title = onlineSet.has(email) ? 'Online' : 'Offline';
+            dot.style.background = onlineSet.has(el.dataset.email) ? '#059669' : '#94a3b8';
+            dot.title = onlineSet.has(el.dataset.email) ? 'Online' : 'Offline';
         });
     }
 
     function applyPresence(email, status) {
-        if (status === 'ONLINE') onlineSet.add(email);
-        else onlineSet.delete(email);
-
+        if (status === 'ONLINE') onlineSet.add(email); else onlineSet.delete(email);
         var dot = document.querySelector('#c-' + CSS.escape(email) + ' .presence-dot');
         if (dot) {
             dot.style.background = status === 'ONLINE' ? '#059669' : '#94a3b8';
             dot.title = status === 'ONLINE' ? 'Online' : 'Offline';
         }
-
         if (email === currentEmail) {
             var headerSub = document.querySelector('.ch-sub');
             if (headerSub) {
@@ -1278,7 +1493,336 @@
         }
     }
 
-    // ─── Boot ─────────────────────────────────────────────────────────────────────
+    // ── Image upload & send ───────────────────────────────────────────────────────
+    var pendingFiles = [];
+
+    function handleImagePick(input) {
+        var picked   = Array.from(input.files);
+        input.value  = '';
+        if (!picked.length) return;
+
+        var allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        var badType = picked.filter(function (f) { return !allowed.includes(f.type); });
+        var tooBig  = picked.filter(function (f) { return f.size > 1024 * 1024; });
+
+        if (badType.length) alert(badType.length + ' file(s) skipped — unsupported type.');
+        if (tooBig.length)  alert(tooBig.length  + ' file(s) skipped — exceeds 1 MB.');
+
+        picked = picked.filter(function (f) { return allowed.includes(f.type) && f.size <= 1024 * 1024; });
+
+        var space = 5 - pendingFiles.length;
+        if (space <= 0) { alert('Maximum 5 images per message.'); return; }
+        if (picked.length > space) {
+            alert('Only ' + space + ' more image(s) can be added. Others skipped.');
+            picked = picked.slice(0, space);
+        }
+
+        pendingFiles = pendingFiles.concat(picked);
+        buildPreviewBar();
+    }
+
+    function buildPreviewBar() {
+        removeImgPreviewBar();
+        if (!pendingFiles.length) return;
+
+        var bar = document.createElement('div');
+        bar.className = 'img-preview-bar';
+        bar.id = 'imgPreviewBar';
+
+        var thumbs = document.createElement('div');
+        thumbs.className = 'preview-thumbs';
+
+        pendingFiles.forEach(function (file, idx) {
+            var wrap = document.createElement('div');
+            wrap.className = 'preview-thumb';
+
+            var img = document.createElement('img');
+            img.alt = file.name;
+
+            var removeBtn = document.createElement('button');
+            removeBtn.className   = 'remove-thumb';
+            removeBtn.textContent = '×';
+            removeBtn.title       = 'Remove';
+            removeBtn.onclick = function () { removePreviewFile(idx); };
+
+            var reader = new FileReader();
+            reader.onload = function (e) { img.src = e.target.result; };
+            reader.readAsDataURL(file);
+
+            wrap.appendChild(img);
+            wrap.appendChild(removeBtn);
+            thumbs.appendChild(wrap);
+        });
+
+        var actions = document.createElement('div');
+        actions.className = 'preview-actions';
+        actions.innerHTML =
+            '<span class="img-upload-progress" id="uploadStatus">'
+            + pendingFiles.length + ' image' + (pendingFiles.length > 1 ? 's' : '') + ' ready</span>'
+            + '<button class="cancel-img" onclick="cancelImage()">✕ Cancel all</button>';
+
+        bar.appendChild(thumbs);
+        bar.appendChild(actions);
+
+        // Insert directly above the input-area so it sits between messages and the input bar
+        var inputArea = document.querySelector('.input-area');
+        if (inputArea) inputArea.parentNode.insertBefore(bar, inputArea);
+    }
+
+    function removePreviewFile(idx) {
+        pendingFiles.splice(idx, 1);
+        pendingFiles.length ? buildPreviewBar() : cancelImage();
+    }
+
+    function removeImgPreviewBar() {
+        var b = document.getElementById('imgPreviewBar');
+        if (b) b.remove();
+    }
+
+    function cancelImage() {
+        pendingFiles = [];
+        removeImgPreviewBar();
+    }
+
+    async function uploadAndSend() {
+        var status    = document.getElementById('uploadStatus');
+        if (status) status.textContent = 'Uploading…';
+
+        var textInput = document.getElementById('msgInput');
+        var text      = textInput ? (textInput.value || '').trim() : '';
+
+        try {
+            var formData = new FormData();
+            pendingFiles.forEach(function (f) { formData.append('files', f); });
+
+            var res = await fetch('/api/chat/upload-image', { method: 'POST', body: formData });
+            if (!res.ok) {
+                var err = await res.json().catch(function () { return {}; });
+                throw new Error(err.error || 'Upload failed');
+            }
+
+            var data = await res.json();
+
+            stompClient.send('/app/chat.send', {}, JSON.stringify({
+                toEmail:   currentEmail,
+                content:   text,
+                imageUrls: data.imageUrls || []
+            }));
+
+            cancelImage();
+            if (textInput) { textInput.value = ''; textInput.style.height = 'auto'; textInput.focus(); }
+
+        } catch (err) {
+            if (status) status.textContent = '⚠ ' + err.message;
+        }
+    }
+
+    function openFullImage(src) {
+        var box = document.createElement('div');
+        box.className = 'img-lightbox';
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className   = 'lightbox-close';
+        closeBtn.innerHTML   = '&times;';
+        closeBtn.title       = 'Close (Esc)';
+
+        var img = document.createElement('img');
+        img.src = src;
+        img.onclick = function (e) { e.stopPropagation(); };
+
+        function closeLightbox() {
+            if (document.body.contains(box)) document.body.removeChild(box);
+            document.removeEventListener('keydown', keyHandler);
+        }
+
+        function keyHandler(e) {
+            if (e.key === 'Escape') { e.stopImmediatePropagation(); closeLightbox(); }
+        }
+
+        document.addEventListener('keydown', keyHandler);
+        closeBtn.onclick = function (e) { e.stopPropagation(); closeLightbox(); };
+        box.onclick = closeLightbox;
+
+        box.appendChild(closeBtn);
+        box.appendChild(img);
+        document.body.appendChild(box);
+    }
+
+    // ── Message context menu ─────────────────────────────────────────────────────
+    var activeCtxMenu = null;
+
+    function toggleMsgMenu(event, btn) {
+        event.stopPropagation();
+        closeCtxMenu();
+
+        var msgDiv = btn.closest('.msg');
+        var msgId  = msgDiv.id ? msgDiv.id.replace('msg-', '') : null;
+        if (!msgId) return;
+
+        var isMine     = msgDiv.dataset.mine === '1';
+        var imageUrls  = JSON.parse(msgDiv.dataset.imageUrls || '[]');
+        var content    = msgDiv.dataset.content;
+        var items      = [];
+
+        if (imageUrls.length > 0) {
+            var dlLabel = imageUrls.length > 1 ? 'Download All (' + imageUrls.length + ')' : 'Download';
+            items.push({ svg: svgDownload(), label: dlLabel, danger: false,
+                action: function () { downloadImages(imageUrls); } });
+        }
+
+        if (imageUrls.length > 0 && content && content.trim()) {
+            items.push({ svg: svgCopy(), label: 'Copy Text', danger: false,
+                action: function () { copyText(content); } });
+            items.push({ svg: svgCopy(), label: 'Copy Image', danger: false,
+                action: function () { copyText(window.location.origin + imageUrls[0]); } });
+        } else if (imageUrls.length > 0) {
+            items.push({ svg: svgCopy(), label: 'Copy Image', danger: false,
+                action: function () { copyText(window.location.origin + imageUrls[0]); } });
+        } else if (content && content.trim()) {
+            items.push({ svg: svgCopy(), label: 'Copy', danger: false,
+                action: function () { copyText(content); } });
+        }
+
+        if (isMine) {
+            items.push({ svg: svgDelete(), label: 'Delete', danger: true,
+                action: function () { deleteMsg(msgId); } });
+        }
+
+        if (!items.length) return;
+
+        var menu = document.createElement('div');
+        menu.className = 'msg-ctx-menu';
+
+        items.forEach(function (item) {
+            var row = document.createElement('div');
+            row.className = 'msg-ctx-item' + (item.danger ? ' danger' : '');
+            row.appendChild(item.svg);
+            var lbl = document.createElement('span');
+            lbl.textContent = item.label;
+            row.appendChild(lbl);
+            row.onclick = function () { item.action(); closeCtxMenu(); };
+            menu.appendChild(row);
+        });
+
+        document.body.appendChild(menu);
+        activeCtxMenu = menu;
+
+        var btnRect  = btn.getBoundingClientRect();
+        var menuRect = menu.getBoundingClientRect();
+
+        var top  = btnRect.bottom + 4;
+        if (top + menuRect.height > window.innerHeight - 8) top = btnRect.top - menuRect.height - 4;
+
+        var left = btnRect.right - menuRect.width;
+        if (left < 8) left = 8;
+        if (left + menuRect.width > window.innerWidth - 8) left = window.innerWidth - menuRect.width - 8;
+
+        menu.style.top  = top  + 'px';
+        menu.style.left = left + 'px';
+
+        setTimeout(function () {
+            document.addEventListener('click', closeCtxMenu, { once: true });
+        }, 10);
+    }
+
+    function downloadImages(urls) {
+        urls.forEach(function (url, i) {
+            setTimeout(function () {
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = url.substring(url.lastIndexOf('/') + 1);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, i * 350);
+        });
+    }
+
+    function copyText(content) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(content).catch(function () { fallbackCopy(content); });
+        } else {
+            fallbackCopy(content);
+        }
+    }
+
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+    }
+
+    async function deleteMsg(msgId) {
+        if (!confirm('Delete this message for everyone?')) return;
+        try {
+            var res = await fetch('/api/chat/message/' + encodeURIComponent(msgId),
+                { method: 'DELETE' });
+            if (res.ok) {
+                // Show placeholder instead of removing the element
+                markAsDeleted(document.getElementById('msg-' + msgId));
+            } else {
+                var body = await res.json().catch(function() { return {}; });
+                alert(body.error || 'Could not delete message.');
+            }
+        } catch(e) {
+            console.error('Delete failed:', e);
+        }
+    }
+
+    // ─── Mark a message as deleted in-place ──────────────────────────────────────
+    function markAsDeleted(el) {
+        if (!el) return;
+
+        // Clear data attributes so the context menu has nothing to offer
+        el.dataset.imageUrls = '[]';
+        el.dataset.content   = '';
+
+        // Replace bubble content with the deleted placeholder
+        var bubbleWrap = el.querySelector('.bubble-wrap');
+        if (bubbleWrap) {
+            bubbleWrap.innerHTML =
+                '<div class="bubble bubble-deleted">'
+                + '<i class="fa-solid fa-ban" style="font-size:11px;opacity:.7;flex-shrink:0"></i>'
+                + 'This message was deleted'
+                + '</div>';
+            // No menu button on a deleted message
+        }
+
+        // Ensure it's fully visible (undo any fade-out that may have started)
+        el.style.opacity    = '1';
+        el.style.transition = '';
+    }
+
+    // ── SVG icon helpers ──────────────────────────────────────────────────────────
+    function makeSvg(pathHtml) {
+        var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        s.setAttribute('width', '15'); s.setAttribute('height', '15');
+        s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none');
+        s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2');
+        s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
+        s.innerHTML = pathHtml;
+        return s;
+    }
+
+    function svgDownload() {
+        return makeSvg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+            '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>');
+    }
+    function svgCopy() {
+        return makeSvg('<rect x="9" y="9" width="13" height="13" rx="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>');
+    }
+    function svgDelete() {
+        return makeSvg('<polyline points="3 6 5 6 21 6"/>' +
+            '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
+            '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>');
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────────────────
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }

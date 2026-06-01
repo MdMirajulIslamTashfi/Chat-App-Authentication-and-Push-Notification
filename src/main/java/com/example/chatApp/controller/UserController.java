@@ -44,6 +44,11 @@ public class UserController {
     @PostMapping("/register")
     public String handleRegister(@ModelAttribute RegisterDto dto, Model model) {
         try {
+            if (!dto.getPassword().equals(dto.getConfirmPassword())) {
+                model.addAttribute("error", "Passwords don't match");
+                model.addAttribute("dto", dto);
+                return "register";
+            }
             userService.register(dto);
             return "redirect:/login?registered=true";
         } catch (Exception e) {

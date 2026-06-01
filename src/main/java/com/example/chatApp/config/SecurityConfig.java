@@ -26,6 +26,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/", "/login", "/register",
                                 "/css/**", "/js/**", "/images/**",
+                                "/uploads/**", // handles storing image publicly
                                 "/ws/**"          // WebSocket handshake must be public
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

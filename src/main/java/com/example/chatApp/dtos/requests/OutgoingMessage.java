@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder (toBuilder = true)
@@ -19,8 +20,10 @@ public class OutgoingMessage {
     private String fromName;
     private String toEmail;
     private String content;
+    private List<String> imageUrls;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") // Serialize LocalDateTime as "2026-05-20T12:08:00" — ISO string JS can parse
     private LocalDateTime sentAt;
     private boolean read;
+    public boolean deleted;
     private boolean mine; // true when the receiver is also the sender (echo)
 }
