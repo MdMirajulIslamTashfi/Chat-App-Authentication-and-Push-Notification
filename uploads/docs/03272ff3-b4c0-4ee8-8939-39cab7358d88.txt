@@ -1,0 +1,8 @@
+async function quickReply() {
+    var to      = document.getElementById('qRecipient').value;
+    var content = document.getElementById('qMsg').value.trim();
+    if (!to || !content || !window.stompClient || !window.stompClient.connected) return;
+    window.stompClient.send('/app/chat.send', {}, JSON.stringify({ toEmail: to, content: content }));
+    document.getElementById('qMsg').value = '';
+    showToast('Sent', 'Message delivered.');
+}
