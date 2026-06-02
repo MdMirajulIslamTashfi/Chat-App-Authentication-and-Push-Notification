@@ -8,18 +8,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    @Value("${app.upload.image-dir:uploads/images}")
+    @Value("${app.upload.image-dir}")
     private String imageDir;
 
-    @Value("${app.upload.doc-dir:uploads/docs}")
+    @Value("${app.upload.doc-dir}")
     private String docDir;
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String base = System.getProperty("user.dir") + "/";
         registry.addResourceHandler("/uploads/images/**")
-                .addResourceLocations("file:" + base + imageDir + "/");
+                .addResourceLocations("file:" + imageDir + "/");
         registry.addResourceHandler("/uploads/docs/**")
-                .addResourceLocations("file:" + base + docDir + "/");
+                .addResourceLocations("file:" + docDir + "/");
     }
 }
