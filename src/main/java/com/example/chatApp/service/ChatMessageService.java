@@ -1,5 +1,6 @@
 package com.example.chatApp.service;
 
+import com.example.chatApp.dtos.DocumentMeta;
 import com.example.chatApp.dtos.requests.ConversationDto;
 import com.example.chatApp.dtos.requests.IncomingMessage;
 import com.example.chatApp.dtos.requests.OutgoingMessage;
@@ -19,22 +20,24 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChatMessageService {
 
-    private final ChatMessageRepository repo;
-    private final UserService userService;
-    private final ImageStorageService imageStorageService;
+    private final ChatMessageRepository  repo;
+    private final UserService            userService;
+    private final ImageStorageService    imageStorageService;
+    private final DocumentStorageService documentStorageService;
 
     /**
      * Saves the message and returns a base DTO.
-     * NOTE: the controller is responsible for setting mine=true/false
-     * per recipient before dispatching via WebSocket.
+     * The controller is responsible for setting mine=true/false per recipient.
      */
     public OutgoingMessage save(IncomingMessage in, String fromEmail) {
         User sender = userService.findByEmail(fromEmail);
+
         ChatMessage msg = repo.save(ChatMessage.builder()
                 .fromEmail(fromEmail)
                 .toEmail(in.getToEmail())
                 .content(in.getContent() != null ? in.getContent() : null)
-                .imageUrls(in.getImageUrls() != null ? in.getImageUrls() : new ArrayList<>())
+                .imageUrls(in.getImageUrls()     != null ? in.getImageUrls()     : new ArrayList<>())
+                .documentMetas(in.getDocumentMetas() != null ? in.getDocumentMetas() : new ArrayList<>())
                 .type(MessageType.DIRECT)
                 .sentAt(LocalDateTime.now())
                 .read(false)
@@ -44,34 +47,27 @@ public class ChatMessageService {
         return toDto(msg, sender.fullName(), null);
     }
 
-    /**
-     * Full thread history between two users.
-     * viewer = the person who requested the thread (their messages get mine=true).
-     */
+    /** Full thread history between two users. */
     public List<OutgoingMessage> getThread(String viewer, String other) {
         return repo.findThread(viewer, other).stream()
                 .map(m -> toDto(m, userService.findByEmail(m.getFromEmail()).fullName(), viewer))
                 .toList();
     }
 
-    // Unread count for a specific thread
     public long unreadCount(String myEmail, String otherEmail) {
         return repo.countUnread(myEmail, otherEmail);
     }
 
-    // Total unread across all threads (dashboard badge)
     public long totalUnread(String myEmail) {
         return repo.countAllUnread(myEmail);
     }
 
-    // All unread messages (notification drawer list)
     public List<OutgoingMessage> allUnread(String myEmail) {
         return repo.findAllUnread(myEmail).stream()
                 .map(m -> toDto(m, userService.findByEmail(m.getFromEmail()).fullName(), myEmail))
                 .toList();
     }
 
-    // Unread counts per contact (sidebar badges)
     public Map<String, Long> allUnreadCounts(String myEmail) {
         List<User> contacts = userService.getAllExcept(myEmail);
         Map<String, Long> result = new HashMap<>();
@@ -82,7 +78,6 @@ public class ChatMessageService {
         return result;
     }
 
-    // Mark all messages from a sender as read
     public void markRead(String reader, String sender) {
         repo.markThreadRead(reader, sender, LocalDateTime.now());
     }
@@ -90,35 +85,30 @@ public class ChatMessageService {
     public List<ConversationDto> getConversations(String myEmail) {
         List<ChatMessage> messages = repo.findByFromEmailOrToEmailOrderBySentAtDesc(myEmail, myEmail);
         Map<String, ConversationDto> map = new LinkedHashMap<>();
+
         for (ChatMessage msg : messages) {
             String partner = msg.getFromEmail().equals(myEmail) ? msg.getToEmail() : msg.getFromEmail();
-            // already added latest message for this partner
-            if (map.containsKey(partner)) {
-                continue;
-            }
+            if (map.containsKey(partner)) continue;
+
             ConversationDto dto = new ConversationDto();
             dto.setEmail(partner);
             dto.setLastTime(msg.getSentAt());
             dto.setImageUrls(msg.getImageUrls());
 
-            // Smart last-message preview
-//            boolean hasImages = msg.getImageUrls() != null && !msg.getImageUrls().isEmpty();
-//            boolean hasText   = msg.getContent() != null && !msg.getContent().isBlank();
-//            if (hasImages && !hasText) {
-//                dto.setLastMessage("📷 " + msg.getImageUrls().size()
-//                        + (msg.getImageUrls().size() == 1 ? " Image" : " Images"));
-//            } else {
-//                dto.setLastMessage(msg.getContent());
-//            }
             if (msg.isDeleted()) {
                 dto.setLastMessage("🚫 This message was deleted");
                 dto.setImageUrls(new ArrayList<>());
             } else {
-                boolean hasImages = msg.getImageUrls() != null && !msg.getImageUrls().isEmpty();
-                boolean hasText   = msg.getContent()   != null && !msg.getContent().isBlank();
-                if (hasImages && !hasText) {
+                boolean hasImages = msg.getImageUrls()     != null && !msg.getImageUrls().isEmpty();
+                boolean hasDocs   = msg.getDocumentMetas() != null && !msg.getDocumentMetas().isEmpty();
+                boolean hasText   = msg.getContent()       != null && !msg.getContent().isBlank();
+
+                if (hasImages && !hasText && !hasDocs) {
                     dto.setLastMessage("📷 " + msg.getImageUrls().size()
                             + (msg.getImageUrls().size() == 1 ? " Image" : " Images"));
+                } else if (hasDocs && !hasText && !hasImages) {
+                    int cnt = msg.getDocumentMetas().size();
+                    dto.setLastMessage("📎 " + cnt + (cnt == 1 ? " File" : " Files"));
                 } else {
                     dto.setLastMessage(msg.getContent());
                 }
@@ -153,14 +143,15 @@ public class ChatMessageService {
                 .toEmail(m.getToEmail())
                 .content(m.getContent())
                 .imageUrls(m.getImageUrls())
-                .sentAt(m.getSentAt())   // LocalDateTime — serialized as ISO string via @JsonFormat
+                .documentMetas(m.getDocumentMetas() != null ? m.getDocumentMetas() : new ArrayList<>())
+                .sentAt(m.getSentAt())
                 .read(m.isRead())
                 .deleted(m.isDeleted())
                 .mine(mine)
                 .build();
     }
 
-    // ── get recipient email before deletion (used by controller for WS notify) ──
+    // ── Get recipient email before deletion (used by controller for WS notify) ──
     public String getMessageRecipient(String messageId, String requesterEmail) {
         return repo.findById(messageId)
                 .filter(m -> m.getFromEmail().equalsIgnoreCase(requesterEmail))
@@ -168,7 +159,7 @@ public class ChatMessageService {
                 .orElse(null);
     }
 
-    // ── delete message — sender only ────────────────────────────────────────
+    // ── Soft-delete — sender only ────────────────────────────────────────────
     public void deleteMessage(String messageId, String requesterEmail) {
         ChatMessage msg = repo.findById(messageId)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found."));
@@ -178,16 +169,22 @@ public class ChatMessageService {
                     "You can only delete your own messages.");
         }
 
-        // Remove image files from disk
+        // Remove physical image files
         if (msg.getImageUrls() != null) {
             msg.getImageUrls().forEach(imageStorageService::deleteFile);
         }
 
-        // ── Soft delete: keep the row, clear content, mark deleted ───────────────
+        // Remove physical document files
+        if (msg.getDocumentMetas() != null) {
+            msg.getDocumentMetas().forEach(documentStorageService::deleteFile);
+        }
+
+        // Soft delete: keep the row, clear content, mark deleted
         msg.setDeleted(true);
         msg.setContent("");
         msg.setImageUrls(new ArrayList<>());
-        repo.save(msg);   // ← save, NOT deleteById
+        msg.setDocumentMetas(new ArrayList<>());
+        repo.save(msg);
 
         log.info("Message {} soft-deleted by {}", messageId, requesterEmail);
     }

@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/login", "/register",
-                                "/css/**", "/js/**", "/images/**",
+                                "/css/**", "/js/**", "/images/**", "/docs/**",
                                 "/uploads/**", // handles storing image publicly
                                 "/ws/**"          // WebSocket handshake must be public
                         ).permitAll()
