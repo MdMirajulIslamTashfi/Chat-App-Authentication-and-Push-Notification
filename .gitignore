@@ -41,3 +41,8 @@ out/
 
 # Firebase service account
 src/main/resources/firebase-service-account.json
+
+# Uploaded images
+src/main/resources/static/uploads/images/**
+# Uploaded documents
+src/main/resources/static/uploads/docs/**

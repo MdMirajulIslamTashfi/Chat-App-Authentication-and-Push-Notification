@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -50,7 +49,7 @@ public class DocumentStorageService {
     /** Relative URL prefix served by Spring's resource handler */
     private static final String URL_PREFIX = "/uploads/docs/";
 
-    @Value("${app.upload.doc-dir:uploads/docs}")
+    @Value("${app.upload.doc-dir:src/main/resources/static/uploads/docs}")
     private String uploadDir;
 
     // ── Store one file, return its DocumentMeta ───────────────────────────────
@@ -67,8 +66,20 @@ public class DocumentStorageService {
         }
 
         String originalName = sanitizeName(file.getOriginalFilename());
-        String extension    = extractExtension(originalName);
-        String storedName   = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
+
+        String extension = extractExtension(originalName);
+        String baseName = originalName.contains(".")
+                ? originalName.substring(0, originalName.lastIndexOf('.'))
+                : originalName;
+
+        String safeEmail = sanitize(uploaderEmail);
+        String safeName = sanitize(baseName);
+
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+        String storedName = safeEmail + "_" + safeName + "_" + timestamp +
+                (extension.isEmpty() ? "" : "." + extension);
 
         try {
             Path dir = Paths.get(uploadDir).toAbsolutePath().normalize();
@@ -98,15 +109,25 @@ public class DocumentStorageService {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    private String sanitizeName(String name) {
-        if (name == null || name.isBlank()) return "file";
-        // Strip path traversal characters, keep only the filename part
-        return Paths.get(name).getFileName().toString()
-                .replaceAll("[^a-zA-Z0-9.\\-_ ]", "_");
+    private String sanitize(String input) {
+        if (input == null || input.isBlank()) {
+            return "unknown";
+        }
+        return input.replaceAll("[^a-zA-Z0-9]", "_");
     }
 
     private String extractExtension(String name) {
         int dot = name.lastIndexOf('.');
         return (dot >= 0 && dot < name.length() - 1) ? name.substring(dot + 1) : "";
+    }
+
+    private String sanitizeName(String name) {
+        if (name == null || name.isBlank()) {
+            return "file";
+        }
+
+        return Paths.get(name)
+                .getFileName()
+                .toString();
     }
 }
